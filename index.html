@@ -282,9 +282,7 @@ const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
-  // Tikslaus sezono žymėjimo iš anksto nežinome, todėl bandysime kelis
-  // variantus ir naudosime TĄ, kuris realiai grąžina rungtynes.
-  SEASON_CANDIDATES: ['2026', '2026-2027', '2025-2026'],
+  SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
 };
 
@@ -321,6 +319,7 @@ const FIFA_RANK = {
   'saudi arabia': 46, 'qatar': 47, 'south africa': 48, 'new zealand': 55,
   'ghana': 50, 'jordan': 60, 'uzbekistan': 57, 'cape verde': 65, 'curacao': 80,
   'haiti': 85, 'jamaica': 53, 'honduras': 75, 'chile': 49, 'venezuela': 52,
+  'czech republic': 36, 'iraq': 58, 'dr congo': 56, 'bosniaherzegovina': 74,
 };
 const RANK_DEFAULT = 50; // numatytas reitingas nežinomoms komandoms
 
@@ -345,6 +344,7 @@ const TEAM_ISO = {
   'cameroon':'cm','algeria':'dz','saudi arabia':'sa','qatar':'qa','south africa':'za',
   'new zealand':'nz','ghana':'gh','jordan':'jo','uzbekistan':'uz','cape verde':'cv',
   'curacao':'cw','haiti':'ht','jamaica':'jm','honduras':'hn','chile':'cl','venezuela':'ve',
+  'bosniaherzegovina':'ba','czech republic':'cz','iraq':'iq','dr congo':'cd',
   'poland':'pl','bolivia':'bo','wales':'\u{1F3F4}\u{E0067}\u{E0062}\u{E0077}\u{E006C}\u{E0073}\u{E007F}',
   'england':'\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}',
   'scotland':'\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}',
@@ -359,6 +359,7 @@ const TEAM_ALIASES = {
   'cote d ivoire':'ivory coast', "cote d'ivoire":'ivory coast', 'côte d’ivoire':'ivory coast',
   'czechia':'czech republic', 'china pr':'china',
   'cabo verde':'cape verde', 'curaçao':'curacao',
+  'congo dr':'dr congo', 'democratic republic of congo':'dr congo',
   'republic of ireland':'ireland',
 };
 
@@ -378,6 +379,31 @@ function flagEmoji(name) {
   if (iso.length > 2) return iso; // jau paruoštas emoji (Anglija ir pan.)
   // Du raidžių ISO kodą paverčiame „regional indicator" simboliais
   return String.fromCodePoint(...[...iso.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+}
+
+// --------------------------------------------------------------------
+// 4b. 2026 PČ GRUPĖS (oficialus 2025-12-05 burtų rezultatas).
+//     SVARBU: TheSportsDB rungtynių įvykiai NETURI grupės lauko, todėl
+//     grupių sudėtį laikome čia. Vardai – tokie, kokius naudoja TheSportsDB.
+// --------------------------------------------------------------------
+const GROUP_TEAMS = {
+  A: ['Mexico', 'South Africa', 'South Korea', 'Czech Republic'],
+  B: ['Canada', 'Bosnia-Herzegovina', 'Qatar', 'Switzerland'],
+  C: ['Brazil', 'Morocco', 'Haiti', 'Scotland'],
+  D: ['USA', 'Paraguay', 'Australia', 'Turkey'],
+  E: ['Germany', 'Curaçao', 'Ivory Coast', 'Ecuador'],
+  F: ['Netherlands', 'Japan', 'Sweden', 'Tunisia'],
+  G: ['Belgium', 'Egypt', 'Iran', 'New Zealand'],
+  H: ['Spain', 'Cape Verde', 'Saudi Arabia', 'Uruguay'],
+  I: ['France', 'Senegal', 'Iraq', 'Norway'],
+  J: ['Argentina', 'Algeria', 'Austria', 'Jordan'],
+  K: ['Portugal', 'DR Congo', 'Uzbekistan', 'Colombia'],
+  L: ['England', 'Croatia', 'Ghana', 'Panama'],
+};
+// Greita paieška: normalizuotas komandos vardas -> grupės raidė
+const TEAM_TO_GROUP = {};
+for (const [g, teams] of Object.entries(GROUP_TEAMS)) {
+  for (const t of teams) TEAM_TO_GROUP[normTeam(t)] = g;
 }
 
 // --------------------------------------------------------------------
@@ -454,16 +480,19 @@ function dayLabel(dateKey, sampleDate) {
 // --------------------------------------------------------------------
 // 7. ĮVYKIŲ PAGALBINĖS FUNKCIJOS
 // --------------------------------------------------------------------
-// Iš „Group A" ištraukiame raidę „A" (grąžina null, jei tai ne grupės rungtynės)
-function parseGroup(ev) {
-  const g = (ev.strGroup || '').match(/group\s*([a-l])/i);
-  return g ? g[1].toUpperCase() : null;
+// Kuriai grupei priklauso rungtynės? API neturi grupės lauko, todėl grupę
+// nustatome pagal komandas: grupių etape ABI komandos yra iš tos pačios grupės,
+// o turas (intRound) yra 1–3. Atkrintamosioms grąžina null.
+function groupOf(ev) {
+  const h = TEAM_TO_GROUP[normTeam(ev.strHomeTeam)];
+  const a = TEAM_TO_GROUP[normTeam(ev.strAwayTeam)];
+  const r = String(ev.intRound);
+  if (h && a && h === a && (r === '1' || r === '2' || r === '3')) return h;
+  return null;
 }
-// Ar tai atkrintamųjų rungtynės? (nėra grupės raidės = ne grupių etapas)
+// Ar tai atkrintamosios? (tikros komandos, bet ne tos pačios grupės / ne 1–3 turas)
 function isKnockoutEvent(ev) {
-  if (parseGroup(ev)) return false;
-  const s = (ev.strGroup || '') + ' ' + (ev.strStage || '') + ' ' + (ev.strEvent || '');
-  return /round of|final|quarter|semi|knockout|16|32/i.test(s) || !ev.strGroup;
+  return isRealTeam(ev.strHomeTeam) && isRealTeam(ev.strAwayTeam) && groupOf(ev) === null;
 }
 // Ar komandos vardas yra tikras (ne „TBD" / „Winner Match 73" ir pan.)?
 function isRealTeam(name) {
@@ -516,46 +545,37 @@ async function loadData() {
   STATE.loading = true; STATE.error = null; STATE.diagTried = [];
   renderStatus(); setRefreshing(true);
 
-  let events = null;
+  const base = CONFIG.API_BASE, id = CONFIG.LEAGUE_ID;
+  // Nemokamas raktas „123" riboja rezultatų kiekį (eventsseason grąžina tik ~15
+  // įvykių, lookuptable – tik kelis). Todėl imame iš trijų „draugiškų" endpointų
+  // ir sujungiame be dublikatų (pagal idEvent):
+  //   - eventsnextleague : artimiausios ~15 rungtynių (būsimos)
+  //   - eventspastleague : paskutinės ~15 (rezultatai)
+  //   - eventsseason     : sezono pradžia (1-as turas)
+  STATE.diagTried = ['eventsnextleague', 'eventspastleague', 'eventsseason s=' + CONFIG.SEASON];
+  const [nextD, pastD, seasonD] = await Promise.all([
+    fetchJson(`${base}eventsnextleague.php?id=${id}`),
+    fetchJson(`${base}eventspastleague.php?id=${id}`),
+    fetchJson(`${base}eventsseason.php?id=${id}&s=${CONFIG.SEASON}`),
+  ]);
 
-  // 8.1 Bandome eventsseason.php su kiekvienu sezono kandidatu
-  for (const season of CONFIG.SEASON_CANDIDATES) {
-    const url = `${CONFIG.API_BASE}eventsseason.php?id=${CONFIG.LEAGUE_ID}&s=${season}`;
-    STATE.diagTried.push('eventsseason s=' + season);
-    const data = await fetchJson(url);
-    if (data && Array.isArray(data.events) && data.events.length) {
-      events = data.events;
-      STATE.season = season;
-      STATE.endpointUsed = 'eventsseason.php';
-      console.log(`✅ eventsseason suveikė: sezonas=${season}, įvykių=${events.length}`);
-      break;
-    } else {
-      console.log(`⚠️ eventsseason tuščias arba neatsakė: sezonas=${season}`);
-    }
+  const arr = d => (d && Array.isArray(d.events)) ? d.events : [];
+  const cNext = arr(nextD), cPast = arr(pastD), cSeason = arr(seasonD);
+
+  // Sujungiame visus įvykius be dublikatų (tik mūsų lygos)
+  const map = new Map();
+  for (const ev of [...cSeason, ...cPast, ...cNext]) {
+    if (ev && ev.idEvent && String(ev.idLeague) === id) map.set(ev.idEvent, ev);
   }
+  const events = [...map.values()];
 
-  // 8.2 Atsarginis variantas: jei sezono sąrašo nėra, bandome šios dienos rungtynes
-  if (!events) {
-    const day = todayKey();
-    const url = `${CONFIG.API_BASE}eventsday.php?d=${day}&s=Soccer`;
-    STATE.diagTried.push('eventsday d=' + day);
-    const data = await fetchJson(url);
-    if (data && Array.isArray(data.events)) {
-      // Paliekame tik World Cup (mūsų lygos) rungtynes
-      const wc = data.events.filter(e => String(e.idLeague) === CONFIG.LEAGUE_ID);
-      if (wc.length) {
-        events = wc;
-        STATE.endpointUsed = 'eventsday.php (tik šiandien)';
-        console.log(`✅ eventsday suveikė: rasta ${wc.length} WC rungtynių šiandien`);
-      }
-    }
-  }
-
-  // 8.3 Rezultatas
-  if (events && events.length) {
+  if (events.length) {
     STATE.events = events;
     STATE.groups = computeGroups(events);
+    STATE.season = CONFIG.SEASON;
+    STATE.endpointUsed = `next(${cNext.length})+past(${cPast.length})+season(${cSeason.length})`;
     STATE.error = null;
+    console.log(`✅ Sujungta: ${events.length} įvykiai (next=${cNext.length}, past=${cPast.length}, season=${cSeason.length})`);
   } else {
     STATE.events = [];
     STATE.groups = {};
@@ -574,38 +594,34 @@ async function loadData() {
 //    nuo atskiro „lookuptable" endpointo (kuris nemokamame rakte ne visada veikia).
 // --------------------------------------------------------------------
 function computeGroups(events) {
-  const groups = {}; // {A: {teams: {Argentina: {...}}}}
+  const groups = {};
 
-  function ensureTeam(g, name) {
-    if (!groups[g]) groups[g] = {};
-    if (!groups[g][name]) {
-      groups[g][name] = { team: name, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, Pts: 0 };
+  // 1) Iš pradžių sudedame VISAS komandas pagal oficialų grupių sąrašą
+  //    (kad visos 12 grupių rodytųsi pilnai, net be sužaistų rungtynių)
+  for (const [g, teams] of Object.entries(GROUP_TEAMS)) {
+    groups[g] = {};
+    for (const t of teams) {
+      groups[g][normTeam(t)] = { team: t, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, Pts: 0 };
     }
-    return groups[g][name];
   }
 
+  // 2) Pridedame BAIGTŲ grupių rungtynių rezultatus
   for (const ev of events) {
-    const g = parseGroup(ev);
+    const g = groupOf(ev);
     if (!g) continue;                                   // tik grupių etapas
-    const home = ev.strHomeTeam, away = ev.strAwayTeam;
-    if (!isRealTeam(home) || !isRealTeam(away)) continue;
-
-    // Užregistruojame abi komandas grupėje (kad rodytųsi net be sužaistų rungtynių)
-    const H = ensureTeam(g, home);
-    const A = ensureTeam(g, away);
-
-    // Jei rungtynės baigtos – atnaujiname statistiką
-    if (matchStatus(ev) === 'done' && hasScore(ev)) {
-      const hs = parseInt(ev.intHomeScore, 10);
-      const as = parseInt(ev.intAwayScore, 10);
-      H.P++; A.P++; H.GF += hs; H.GA += as; A.GF += as; A.GA += hs;
-      if (hs > as)      { H.W++; H.Pts += 3; A.L++; }
-      else if (hs < as) { A.W++; A.Pts += 3; H.L++; }
-      else              { H.D++; A.D++; H.Pts++; A.Pts++; }
-    }
+    if (matchStatus(ev) !== 'done' || !hasScore(ev)) continue;
+    const H = groups[g][normTeam(ev.strHomeTeam)];
+    const A = groups[g][normTeam(ev.strAwayTeam)];
+    if (!H || !A) continue;                             // apsauga (nesutampa vardas)
+    const hs = parseInt(ev.intHomeScore, 10);
+    const as = parseInt(ev.intAwayScore, 10);
+    H.P++; A.P++; H.GF += hs; H.GA += as; A.GF += as; A.GA += hs;
+    if (hs > as)      { H.W++; H.Pts += 3; A.L++; }
+    else if (hs < as) { A.W++; A.Pts += 3; H.L++; }
+    else              { H.D++; A.D++; H.Pts++; A.Pts++; }
   }
 
-  // Surūšiuojame kiekvieną grupę: taškai → įvarčių skirtumas → įmušti įvarčiai
+  // 3) Surūšiuojame kiekvieną grupę: taškai → įvarčių skirtumas → įmušti įvarčiai
   const sorted = {};
   Object.keys(groups).sort().forEach(g => {
     sorted[g] = Object.values(groups[g]).sort((a, b) =>
@@ -681,7 +697,7 @@ function renderMatches() {
 function matchCard(ev) {
   const status = matchStatus(ev);
   const d = kickoffDate(ev);
-  const g = parseGroup(ev);
+  const g = groupOf(ev);
   const hype = computeHype(ev);
 
   // Statuso ženkliukas
@@ -693,7 +709,7 @@ function matchCard(ev) {
   // Grupės arba etapo ženkliukas
   const stagePill = g
     ? `<span class="pill group">${esc(g)} grupė</span>`
-    : `<span class="pill group">${esc(ev.strGroup || 'Atkrintamosios')}</span>`;
+    : `<span class="pill group">Atkrintamosios</span>`;
 
   // Rezultatas (jei baigta/vyksta) arba tuščia
   const showScore = (status === 'done' || status === 'live') && hasScore(ev);
