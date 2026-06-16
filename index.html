@@ -219,11 +219,10 @@
   .pbar .ph { background: var(--green); }
   .pbar .pd { background: #64748b; }
   .pbar .pa { background: #818cf8; }
-  .pvals { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; font-weight: 700; }
-  .pvals span:first-child { color: var(--green); }
-  .pvals span:nth-child(2) { color: #94a3b8; }
-  .pvals span:last-child { color: #818cf8; }
-  .pvals b { font-weight: 800; }
+  .xdraw { text-align: center; margin-top: 6px; font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .2px; }
+  .winp { font-size: 16px; font-weight: 800; min-width: 46px; text-align: right; flex: none; }
+  .winp.ph { color: var(--green); }
+  .winp.pa { color: #818cf8; }
 
   /* ---------- Tinklelis (bracket) ---------- */
   .bracket-note { font-size: 12.5px; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
@@ -329,7 +328,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v10',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v11',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -814,18 +813,15 @@ function matchCard(ev) {
   // Dieną jau rodo antraštė (ŠIANDIEN / RYTOJ / data) – kortelėje tik laikas
   const when = `<div class="when">🕒 <span class="t">${esc(vilniusTime(d))}</span> (LT)</div>`;
 
-  // Laimėjimo tikimybės (1 / X / 2) iš realių koeficientų – tik dar nesužaistoms;
-  // favoritas (didžiausia tikimybė) paryškinamas
+  // Laimėjimo tikimybės iš realių koeficientų – tik dar nesužaistoms.
+  // 1 ir 2 rodome PRIE pačių komandų (spalvos sutampa), X (lygiosios) – po juosta.
   const od = (status !== 'done') ? oddsForEvent(ev) : null;
-  let probs = '';
-  if (od) {
-    const mx = Math.max(od.ph, od.pd, od.pa);
-    const b = v => (v === mx ? `<b>${v}%</b>` : `${v}%`);
-    probs = `<div class="probs">
+  const homeRight = showScore ? `<span class="score">${hs}</span>` : (od ? `<span class="winp ph">${od.ph}%</span>` : '');
+  const awayRight = showScore ? `<span class="score">${as}</span>` : (od ? `<span class="winp pa">${od.pa}%</span>` : '');
+  const probs = od ? `<div class="probs">
       <div class="pbar"><i class="ph" style="width:${od.ph}%"></i><i class="pd" style="width:${od.pd}%"></i><i class="pa" style="width:${od.pa}%"></i></div>
-      <div class="pvals"><span>1 · ${b(od.ph)}</span><span>X · ${b(od.pd)}</span><span>2 · ${b(od.pa)}</span></div>
-    </div>`;
-  }
+      <div class="xdraw">Lygiosios (X) · ${od.pd}%</div>
+    </div>` : '';
 
   return `<div class="match">
     <div class="top">
@@ -835,11 +831,11 @@ function matchCard(ev) {
     <div class="teams">
       <div class="team-row">
         <span class="team ${homeWin ? 'win' : ''}">${teamLogo(ev.strHomeTeam, ev.strHomeTeamBadge)}<span class="name">${esc(ev.strHomeTeam)}</span><span class="rank-chip">#${teamRank(ev.strHomeTeam)}</span></span>
-        <span class="score">${hs}</span>
+        ${homeRight}
       </div>
       <div class="team-row">
         <span class="team ${awayWin ? 'win' : ''}">${teamLogo(ev.strAwayTeam, ev.strAwayTeamBadge)}<span class="name">${esc(ev.strAwayTeam)}</span><span class="rank-chip">#${teamRank(ev.strAwayTeam)}</span></span>
-        <span class="score">${as}</span>
+        ${awayRight}
       </div>
     </div>
     ${probs}
