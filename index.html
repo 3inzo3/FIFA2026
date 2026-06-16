@@ -68,12 +68,15 @@
 
   /* ---------- Tab'ai (skiltys) ---------- */
   nav.tabs {
-    margin-top: 14px; display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 6px; background: var(--card); padding: 5px; border-radius: 14px; border: 1px solid var(--line);
+    margin-top: 14px; display: flex; gap: 6px; background: var(--card);
+    padding: 5px; border-radius: 14px; border: 1px solid var(--line);
+    overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
   }
+  nav.tabs::-webkit-scrollbar { display: none; }
   .tab {
+    flex: 1 0 auto; white-space: nowrap;
     border: none; background: transparent; color: var(--muted);
-    padding: 9px 4px; border-radius: 10px; font-size: 13.5px; font-weight: 600;
+    padding: 9px 12px; border-radius: 10px; font-size: 13.5px; font-weight: 600;
     cursor: pointer; transition: background .15s, color .15s;
   }
   .tab.active { background: var(--card-2); color: var(--gold); }
@@ -155,13 +158,19 @@
   .group-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 4px 8px; margin-bottom: 14px; overflow: hidden; }
   .group-title { font-size: 15px; font-weight: 800; padding: 8px 12px 4px; }
   .group-title .accent { color: var(--gold); }
-  table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-  table.tbl th, table.tbl td { padding: 8px 6px; text-align: center; }
-  table.tbl th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; border-bottom: 1px solid var(--line); }
-  table.tbl td.team-cell, table.tbl th.team-cell { text-align: left; padding-left: 10px; }
-  table.tbl td.team-cell { display: flex; align-items: center; gap: 8px; }
-  table.tbl td.team-cell .flag { font-size: 17px; }
-  table.tbl td.team-cell .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  /* table-layout: fixed + colgroup — kad stulpeliai būtų vienodi ir nieko neišmuštų */
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  table.tbl th, table.tbl td { padding: 7px 2px; text-align: center; }
+  table.tbl th { color: var(--muted); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .2px; border-bottom: 1px solid var(--line); }
+  table.tbl col.c-pos { width: 22px; }
+  table.tbl col.c-stat { width: 24px; }
+  table.tbl col.c-gf { width: 42px; }
+  table.tbl col.c-pts { width: 32px; }
+  table.tbl td.team-cell, table.tbl th.team-cell { text-align: left; padding-left: 8px; }
+  /* Komandos langelis: vidinis „flex", kad vėliava + pavadinimas tilptų ir nesilaužytų */
+  table.tbl .tc { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  table.tbl .tc .flag { font-size: 16px; flex: none; }
+  table.tbl .tc .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   table.tbl td.pts { font-weight: 800; color: var(--text); }
   table.tbl tr td { border-bottom: 1px solid rgba(38,51,64,.5); }
   table.tbl tr:last-child td { border-bottom: none; }
@@ -176,6 +185,19 @@
   .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 2px 2px 14px; }
   .legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
   .legend .dot.g { background: var(--green); } .legend .dot.y { background: var(--yellow); }
+
+  /* Reitingo ženkliukas prie komandos rungtynių kortelėje */
+  .rank-chip { font-size: 11px; color: var(--muted); font-weight: 700; margin-left: 6px; flex: none; }
+
+  /* Reitingų skiltis */
+  .rk-info { font-size: 12.5px; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; line-height: 1.55; }
+  .rk-info b { color: var(--text); }
+  .rk-list { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .rk-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid rgba(38,51,64,.5); }
+  .rk-row:last-child { border-bottom: none; }
+  .rk-row .rkpos { width: 30px; color: var(--gold); font-weight: 800; font-size: 14px; text-align: center; flex: none; }
+  .rk-row .flag { font-size: 19px; flex: none; }
+  .rk-row .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* ---------- Tinklelis (bracket) ---------- */
   .bracket-note { font-size: 12.5px; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
@@ -217,6 +239,7 @@
       <button class="tab active" data-tab="matches">Rungtynės</button>
       <button class="tab" data-tab="tables">Lentelės</button>
       <button class="tab" data-tab="bracket">Tinklelis</button>
+      <button class="tab" data-tab="rankings">Reitingai</button>
       <button class="tab" data-tab="odds">Koeficientai</button>
     </nav>
   </header>
@@ -229,10 +252,13 @@
     <!-- 1) RUNGTYNĖS -->
     <section class="tab-panel active" id="tab-matches">
       <div class="toolbar">
-        <span class="label">Rūšiuoti:</span>
+        <span class="seg" id="filterSeg">
+          <button data-filter="upcoming" class="active">Būsimos</button>
+          <button data-filter="finished">Pasibaigusios</button>
+        </span>
         <span class="seg" id="sortSeg">
-          <button data-sort="time" class="active">Pagal laiką</button>
-          <button data-sort="hype">Pagal hype 🔥</button>
+          <button data-sort="time" class="active">Laikas</button>
+          <button data-sort="hype">Hype 🔥</button>
         </span>
       </div>
       <div id="matchesList"></div>
@@ -253,7 +279,13 @@
       <div class="rounds" id="bracketRounds"></div>
     </section>
 
-    <!-- 4) KOEFICIENTAI (2 fazė — kol kas tuščia) -->
+    <!-- 4) REITINGAI (FIFA reitingai + HYPE paaiškinimas) -->
+    <section class="tab-panel" id="tab-rankings">
+      <div class="rk-info" id="hypeInfo"></div>
+      <div class="rk-list" id="rankingsList"></div>
+    </section>
+
+    <!-- 5) KOEFICIENTAI (2 fazė — kol kas tuščia) -->
     <section class="tab-panel" id="tab-odds">
       <div class="soon">
         <div class="big">💰</div>
@@ -296,6 +328,7 @@ const STATE = {
   endpointUsed: null,  // kuris endpointas davė duomenis (diagnostikai)
   activeTab: 'matches',
   sortMode: 'time',    // 'time' arba 'hype'
+  matchFilter: 'upcoming', // 'upcoming' (būsimos) arba 'finished' (pasibaigusios)
   loading: false,
   error: null,
   diagTried: [],       // ką bandėme (diagnostikai)
@@ -307,19 +340,17 @@ const STATE = {
 //    stipresnė komanda. Komandoms be reitingo duodame numatytą žemą (50).
 // --------------------------------------------------------------------
 const FIFA_RANK = {
-  'france': 1, 'spain': 2, 'argentina': 3, 'england': 4, 'portugal': 5,
+  // Apytiksliai FIFA reitingai (~2026-06). Mažesnis skaičius = stipresnė komanda.
+  'argentina': 1, 'spain': 2, 'france': 3, 'england': 4, 'portugal': 5,
   'brazil': 6, 'netherlands': 7, 'morocco': 8, 'belgium': 9, 'germany': 10,
-  'croatia': 11, 'italy': 12, 'colombia': 13, 'senegal': 14, 'mexico': 15,
-  'united states': 16, 'uruguay': 17, 'japan': 18, 'switzerland': 19, 'denmark': 20,
-  'south korea': 21, 'iran': 22, 'austria': 23, 'australia': 24, 'ecuador': 25,
-  'canada': 26, 'ukraine': 27, 'sweden': 28, 'turkey': 29, 'wales': 30,
-  'serbia': 31, 'egypt': 32, 'panama': 33, 'norway': 34, 'nigeria': 35,
-  'peru': 36, 'scotland': 37, 'hungary': 38, 'ivory coast': 39, 'greece': 40,
-  'paraguay': 41, 'tunisia': 42, 'costa rica': 43, 'cameroon': 44, 'algeria': 45,
-  'saudi arabia': 46, 'qatar': 47, 'south africa': 48, 'new zealand': 55,
-  'ghana': 50, 'jordan': 60, 'uzbekistan': 57, 'cape verde': 65, 'curacao': 80,
-  'haiti': 85, 'jamaica': 53, 'honduras': 75, 'chile': 49, 'venezuela': 52,
-  'czech republic': 36, 'iraq': 58, 'dr congo': 56, 'bosniaherzegovina': 74,
+  'croatia': 11, 'colombia': 13, 'mexico': 14, 'senegal': 15, 'united states': 16,
+  'uruguay': 17, 'japan': 18, 'switzerland': 19, 'iran': 20, 'south korea': 21,
+  'austria': 23, 'australia': 24, 'ecuador': 25, 'canada': 26, 'sweden': 28,
+  'turkey': 29, 'norway': 31, 'egypt': 32, 'panama': 33, 'czech republic': 36,
+  'scotland': 37, 'ivory coast': 39, 'paraguay': 41, 'tunisia': 42, 'algeria': 45,
+  'dr congo': 46, 'qatar': 47, 'south africa': 48, 'saudi arabia': 49, 'uzbekistan': 50,
+  'ghana': 51, 'iraq': 57, 'jordan': 63, 'cape verde': 67, 'bosniaherzegovina': 74,
+  'curacao': 80, 'haiti': 85, 'new zealand': 86,
 };
 const RANK_DEFAULT = 50; // numatytas reitingas nežinomoms komandoms
 
@@ -661,24 +692,31 @@ function renderMatches() {
   const wrap = el('matchesList');
   if (STATE.loading || STATE.error) { wrap.innerHTML = ''; return; }
 
-  // Rodome tik tikras (ne TBD) rungtynes nuo šios dienos pradžios į priekį
-  const today = todayKey();
+  // Tik tikros (ne TBD) rungtynės su žinomu laiku
   let list = STATE.events.filter(ev =>
-    isRealTeam(ev.strHomeTeam) && isRealTeam(ev.strAwayTeam) && kickoffDate(ev) && vilniusKey(kickoffDate(ev)) >= today
+    isRealTeam(ev.strHomeTeam) && isRealTeam(ev.strAwayTeam) && kickoffDate(ev)
   );
+  // Skaidome pagal filtrą: „Būsimos" (būsimos + vykstančios) / „Pasibaigusios"
+  const finished = STATE.matchFilter === 'finished';
+  list = list.filter(ev => {
+    const st = matchStatus(ev);
+    return finished ? st === 'done' : (st === 'upcoming' || st === 'live');
+  });
 
   if (!list.length) {
-    wrap.innerHTML = `<div class="empty">Artimiausių rungtynių nerasta.<br>Galbūt turnyro etapas baigėsi arba duomenys dar nepaskelbti.</div>`;
+    wrap.innerHTML = `<div class="empty">${finished
+      ? 'Baigtų rungtynių dar nėra.'
+      : 'Artimiausių rungtynių nerasta.'}<br>Spausk „Atnaujinti" arba bandyk vėliau.</div>`;
     return;
   }
 
   if (STATE.sortMode === 'hype') {
-    // Rūšiuojame pagal hype (didžiausias viršuje), be dienų grupavimo
+    // Pagal hype (didžiausias viršuje), be dienų grupavimo
     list.sort((a, b) => computeHype(b) - computeHype(a));
     wrap.innerHTML = list.map(matchCard).join('');
   } else {
-    // Rūšiuojame pagal laiką ir grupuojame pagal dieną
-    list.sort((a, b) => kickoffDate(a) - kickoffDate(b));
+    // Pagal laiką: būsimos – didėjančia, pasibaigusios – mažėjančia (naujausios viršuje)
+    list.sort((a, b) => finished ? kickoffDate(b) - kickoffDate(a) : kickoffDate(a) - kickoffDate(b));
     let html = '', lastDay = null;
     for (const ev of list) {
       const d = kickoffDate(ev);
@@ -733,11 +771,11 @@ function matchCard(ev) {
     </div>
     <div class="teams">
       <div class="team-row">
-        <span class="team ${homeWin ? 'win' : ''}"><span class="flag">${flagEmoji(ev.strHomeTeam)}</span><span class="name">${esc(ev.strHomeTeam)}</span></span>
+        <span class="team ${homeWin ? 'win' : ''}"><span class="flag">${flagEmoji(ev.strHomeTeam)}</span><span class="name">${esc(ev.strHomeTeam)}</span><span class="rank-chip">#${teamRank(ev.strHomeTeam)}</span></span>
         <span class="score">${hs}</span>
       </div>
       <div class="team-row">
-        <span class="team ${awayWin ? 'win' : ''}"><span class="flag">${flagEmoji(ev.strAwayTeam)}</span><span class="name">${esc(ev.strAwayTeam)}</span></span>
+        <span class="team ${awayWin ? 'win' : ''}"><span class="flag">${flagEmoji(ev.strAwayTeam)}</span><span class="name">${esc(ev.strAwayTeam)}</span><span class="rank-chip">#${teamRank(ev.strAwayTeam)}</span></span>
         <span class="score">${as}</span>
       </div>
     </div>
@@ -760,10 +798,9 @@ function renderTables() {
     const rows = STATE.groups[g].map((t, i) => {
       const pos = i + 1;
       const cls = pos <= 2 ? 'adv' : pos === 3 ? 'maybe' : '';
-      const gd = t.GF - t.GA;
       return `<tr class="${cls}">
         <td class="pos">${pos}</td>
-        <td class="team-cell"><span class="flag">${flagEmoji(t.team)}</span><span class="nm">${esc(t.team)}</span></td>
+        <td class="team-cell"><span class="tc"><span class="flag">${flagEmoji(t.team)}</span><span class="nm">${esc(t.team)}</span></span></td>
         <td>${t.P}</td><td>${t.W}</td><td>${t.D}</td><td>${t.L}</td>
         <td>${t.GF}:${t.GA}</td>
         <td class="pts">${t.Pts}</td>
@@ -773,6 +810,7 @@ function renderTables() {
     return `<div class="group-card">
       <div class="group-title"><span class="accent">${esc(g)}</span> grupė</div>
       <table class="tbl">
+        <colgroup><col class="c-pos"><col><col class="c-stat"><col class="c-stat"><col class="c-stat"><col class="c-stat"><col class="c-gf"><col class="c-pts"></colgroup>
         <thead><tr>
           <th class="pos"></th><th class="team-cell">Komanda</th>
           <th>Ž</th><th>P</th><th>L</th><th>Pr</th><th>Įv</th><th>Tšk</th>
@@ -853,6 +891,24 @@ function renderBracket() {
   `;
 }
 
+// 10.35 REITINGAI (FIFA reitingai + HYPE paaiškinimas)
+function renderRankings() {
+  el('hypeInfo').innerHTML = `<b>Kaip skaičiuojamas HYPE 🔥 (1–100)?</b><br>
+    Bazė: kuo aukštesni ABIEJŲ komandų FIFA reitingai, tuo daugiau taškų.
+    Pridedama <b>+</b> už „didžiąsias" komandas (Argentina, Prancūzija, Brazilija, Anglija,
+    Ispanija, Portugalija, Vokietija, Nyderlandai) ir <b>+</b> už atkrintamąsias arba
+    lemiamą (3‑čią) grupės turą. Spalva: žalia (ramios) → geltona → raudona (karštos).
+    <br><br><b>FIFA reitingai</b> (apytiksliai, 2026‑06) — pagal juos skaičiuojamas hype:`;
+
+  // Visi 48 dalyviai, surūšiuoti pagal reitingą
+  const teams = [];
+  for (const list of Object.values(GROUP_TEAMS)) for (const t of list) teams.push(t);
+  teams.sort((a, b) => teamRank(a) - teamRank(b) || a.localeCompare(b));
+  el('rankingsList').innerHTML = teams.map(t =>
+    `<div class="rk-row"><span class="rkpos">${teamRank(t)}</span><span class="flag">${flagEmoji(t)}</span><span class="nm">${esc(t)}</span></div>`
+  ).join('');
+}
+
 // 10.4 PORAŠTĖ / DIAGNOSTIKA
 function renderDiag() {
   const d = el('diag');
@@ -872,6 +928,7 @@ function renderAll() {
   renderMatches();
   renderTables();
   renderBracket();
+  renderRankings();
   renderDiag();
 }
 
@@ -897,6 +954,12 @@ el('sortSeg').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   STATE.sortMode = b.dataset.sort;
   document.querySelectorAll('#sortSeg button').forEach(x => x.classList.toggle('active', x === b));
+  renderMatches();
+});
+el('filterSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  STATE.matchFilter = b.dataset.filter;
+  document.querySelectorAll('#filterSeg button').forEach(x => x.classList.toggle('active', x === b));
   renderMatches();
 });
 el('refreshBtn').addEventListener('click', () => { if (!STATE.loading) loadData(); });
