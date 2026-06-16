@@ -57,7 +57,7 @@
     font-size: 26px; font-weight: 800; letter-spacing: 0.3px;
     display: flex; align-items: center; gap: 10px;
   }
-  .title .ball { font-size: 24px; }
+  .title .ball { font-size: 20px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: var(--card); border: 1px solid var(--line); border-radius: 11px; }
   .title .accent { color: var(--gold); }
 
   .subrow {
@@ -145,22 +145,23 @@
   .pill.done { color: var(--green); }
   @keyframes blink { 50% { opacity: .3; } }
 
-  /* Hype ženkliukas */
-  .hype { font-size: 12.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
-  .hype.low  { color: #062f23; background: var(--green); }
-  .hype.mid  { color: #3a2c00; background: var(--yellow); }
-  .hype.high { color: #fff;     background: #ef4444; }
+  /* Hype ženkliukas — subtilus, spalvotas tik tekstas/fonas */
+  .hype { font-size: 12px; font-weight: 800; padding: 4px 9px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent; }
+  .hype.low  { color: var(--green);  background: rgba(52,211,153,.12);  border-color: rgba(52,211,153,.25); }
+  .hype.mid  { color: var(--yellow); background: rgba(251,191,36,.12);  border-color: rgba(251,191,36,.25); }
+  .hype.high { color: #fb7185;       background: rgba(248,113,113,.13); border-color: rgba(248,113,113,.28); }
 
   /* Komandų eilutės */
-  .teams { display: flex; flex-direction: column; gap: 6px; }
+  .teams { display: flex; flex-direction: column; gap: 8px; }
   .team-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .team { display: flex; align-items: center; gap: 9px; min-width: 0; }
-  .team .flag { font-size: 21px; width: 26px; text-align: center; flex: none; }
-  .team .name { font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .team.win .name { color: #fff; }
-  .score { font-size: 18px; font-weight: 800; min-width: 22px; text-align: right; }
-  .match .when { margin-top: 10px; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-  .match .when .t { color: var(--text); font-weight: 600; }
+  .team { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .team .flag { font-size: 22px; width: 26px; text-align: center; flex: none; }
+  .crest { width: 26px; height: 26px; object-fit: contain; flex: none; }
+  .team .name { font-size: 16.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .team.win .name { color: #fff; font-weight: 700; }
+  .score { font-size: 19px; font-weight: 800; min-width: 22px; text-align: right; }
+  .match .when { margin-top: 11px; font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .match .when .t { color: var(--text); font-weight: 700; }
 
   /* ---------- Lentelės (grupės) ---------- */
   .group-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 4px 8px; margin-bottom: 14px; overflow: hidden; }
@@ -178,6 +179,7 @@
   /* Komandos langelis: vidinis „flex", kad vėliava + pavadinimas tilptų ir nesilaužytų */
   table.tbl .tc { display: flex; align-items: center; gap: 7px; min-width: 0; }
   table.tbl .tc .flag { font-size: 16px; flex: none; }
+  table.tbl .tc .crest { width: 20px; height: 20px; }
   table.tbl .tc .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   table.tbl td.pts { font-weight: 800; color: var(--text); }
   table.tbl tr td { border-bottom: 1px solid rgba(38,51,64,.5); }
@@ -205,18 +207,23 @@
   .rk-row:last-child { border-bottom: none; }
   .rk-row .rkpos { width: 30px; color: var(--gold); font-weight: 800; font-size: 14px; text-align: center; flex: none; }
   .rk-row .flag { font-size: 19px; flex: none; }
+  .rk-row .crest { width: 24px; height: 24px; }
   .rk-row .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* Laimėjimo tikimybės (1 / X / 2) rungtynių kortelėje */
-  .probs { margin-top: 10px; }
-  .pbar { display: flex; height: 7px; border-radius: 4px; overflow: hidden; background: var(--card-2); }
+  .probs { margin-top: 11px; }
+  .pbar { display: flex; gap: 2px; height: 8px; }
   .pbar i { display: block; height: 100%; }
+  .pbar i:first-child { border-radius: 999px 3px 3px 999px; }
+  .pbar i:last-child { border-radius: 3px 999px 999px 3px; }
   .pbar .ph { background: var(--green); }
-  .pbar .pd { background: #5d6b7a; }
-  .pbar .pa { background: var(--gold); }
-  .pvals { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+  .pbar .pd { background: #64748b; }
+  .pbar .pa { background: #818cf8; }
+  .pvals { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; font-weight: 700; }
   .pvals span:first-child { color: var(--green); }
-  .pvals span:last-child { color: var(--gold); }
+  .pvals span:nth-child(2) { color: #94a3b8; }
+  .pvals span:last-child { color: #818cf8; }
+  .pvals b { font-weight: 800; }
 
   /* ---------- Tinklelis (bracket) ---------- */
   .bracket-note { font-size: 12.5px; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
@@ -322,7 +329,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v9',                // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v10',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -336,6 +343,7 @@ const STATE = {
   events: [],          // visi turnyro įvykiai (rungtynės) iš API
   groups: {},          // apskaičiuotos grupių lentelės {A: {...}, B: {...}}
   odds: {},            // realių koeficientų tikimybės (iš odds.json)
+  badges: {},          // komandų herbai (logo URL) iš API įvykių
   endpointUsed: null,  // kuris endpointas davė duomenis (diagnostikai)
   activeTab: 'matches',
   sortMode: 'time',    // 'time' arba 'hype'
@@ -633,6 +641,14 @@ async function loadData() {
     for (const ev of arr(d)) if (ev && ev.idEvent && String(ev.idLeague) === id) byId.set(ev.idEvent, ev);
   }
   const events = [...byId.values()];
+
+  // Komandų herbai (logo) iš įvykių – naudosime juos vietoj vėliavų emoji
+  STATE.badges = {};
+  for (const ev of events) {
+    if (ev.strHomeTeamBadge) STATE.badges[normTeam(ev.strHomeTeam)] = ev.strHomeTeamBadge;
+    if (ev.strAwayTeamBadge) STATE.badges[normTeam(ev.strAwayTeam)] = ev.strAwayTeamBadge;
+  }
+
   const roundCount = arr(r1).length + arr(r2).length + arr(r3).length;
   STATE.endpointUsed = `eventsround(${roundCount}) + next(${arr(nx).length}) + past(${arr(ps).length})`;
 
@@ -704,6 +720,14 @@ const el = id => document.getElementById(id);
 // Mažas pagalbininkas saugiam tekstui (apsauga nuo HTML įterpimo)
 function esc(s) { return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
+// Komandos logotipas: tikras herbas (jei žinomas) arba vėliavos emoji kaip atsarga
+function teamLogo(name, badge) {
+  return badge
+    ? `<img class="crest" loading="lazy" src="${esc(badge)}/small" alt="" onerror="this.remove()">`
+    : `<span class="flag">${flagEmoji(name)}</span>`;
+}
+const logoFor = name => teamLogo(name, STATE.badges[normTeam(name)]);
+
 // 10.0 Būsenos juosta (kraunasi / klaida)
 function renderStatus() {
   const box = el('status');
@@ -770,11 +794,9 @@ function matchCard(ev) {
   const g = groupOf(ev);
   const hype = computeHype(ev);
 
-  // Statuso ženkliukas
-  let statusPill = '';
-  if (status === 'live') statusPill = `<span class="pill live">VYKSTA</span>`;
-  else if (status === 'done') statusPill = `<span class="pill done">Baigta</span>`;
-  else statusPill = `<span class="pill">Būsima</span>`;
+  // Statusas rodomas TIK kai vyksta (live). Būsimoms laiką, baigtoms rezultatą
+  // rodo pati kortelė – tad nereikia papildomo „Būsima"/„Baigta" ženkliuko.
+  const statusPill = (status === 'live') ? `<span class="pill live">VYKSTA</span>` : '';
 
   // Grupės arba etapo ženkliukas
   const stagePill = g
@@ -789,19 +811,21 @@ function matchCard(ev) {
   const awayWin = showScore && +ev.intAwayScore > +ev.intHomeScore;
 
   // Laiko eilutė: baigtoms rodome datą, būsimoms – datą ir laiką (LT)
-  let when;
-  if (status === 'upcoming') {
-    when = `<div class="when">🕒 <span class="t">${esc(vilniusTime(d))} (LT)</span> · ${esc(vilniusLongDate(d))}</div>`;
-  } else {
-    when = `<div class="when">${esc(vilniusLongDate(d))} · ${esc(vilniusTime(d))} (LT)</div>`;
-  }
+  // Dieną jau rodo antraštė (ŠIANDIEN / RYTOJ / data) – kortelėje tik laikas
+  const when = `<div class="when">🕒 <span class="t">${esc(vilniusTime(d))}</span> (LT)</div>`;
 
-  // Laimėjimo tikimybės (1 / X / 2) iš realių koeficientų – tik dar nesužaistoms
+  // Laimėjimo tikimybės (1 / X / 2) iš realių koeficientų – tik dar nesužaistoms;
+  // favoritas (didžiausia tikimybė) paryškinamas
   const od = (status !== 'done') ? oddsForEvent(ev) : null;
-  const probs = od ? `<div class="probs">
+  let probs = '';
+  if (od) {
+    const mx = Math.max(od.ph, od.pd, od.pa);
+    const b = v => (v === mx ? `<b>${v}%</b>` : `${v}%`);
+    probs = `<div class="probs">
       <div class="pbar"><i class="ph" style="width:${od.ph}%"></i><i class="pd" style="width:${od.pd}%"></i><i class="pa" style="width:${od.pa}%"></i></div>
-      <div class="pvals"><span>1 · ${od.ph}%</span><span>X · ${od.pd}%</span><span>2 · ${od.pa}%</span></div>
-    </div>` : '';
+      <div class="pvals"><span>1 · ${b(od.ph)}</span><span>X · ${b(od.pd)}</span><span>2 · ${b(od.pa)}</span></div>
+    </div>`;
+  }
 
   return `<div class="match">
     <div class="top">
@@ -810,11 +834,11 @@ function matchCard(ev) {
     </div>
     <div class="teams">
       <div class="team-row">
-        <span class="team ${homeWin ? 'win' : ''}"><span class="flag">${flagEmoji(ev.strHomeTeam)}</span><span class="name">${esc(ev.strHomeTeam)}</span><span class="rank-chip">#${teamRank(ev.strHomeTeam)}</span></span>
+        <span class="team ${homeWin ? 'win' : ''}">${teamLogo(ev.strHomeTeam, ev.strHomeTeamBadge)}<span class="name">${esc(ev.strHomeTeam)}</span><span class="rank-chip">#${teamRank(ev.strHomeTeam)}</span></span>
         <span class="score">${hs}</span>
       </div>
       <div class="team-row">
-        <span class="team ${awayWin ? 'win' : ''}"><span class="flag">${flagEmoji(ev.strAwayTeam)}</span><span class="name">${esc(ev.strAwayTeam)}</span><span class="rank-chip">#${teamRank(ev.strAwayTeam)}</span></span>
+        <span class="team ${awayWin ? 'win' : ''}">${teamLogo(ev.strAwayTeam, ev.strAwayTeamBadge)}<span class="name">${esc(ev.strAwayTeam)}</span><span class="rank-chip">#${teamRank(ev.strAwayTeam)}</span></span>
         <span class="score">${as}</span>
       </div>
     </div>
@@ -840,7 +864,7 @@ function renderTables() {
       const cls = pos <= 2 ? 'adv' : pos === 3 ? 'maybe' : '';
       return `<tr class="${cls}">
         <td class="pos">${pos}</td>
-        <td class="team-cell"><span class="tc"><span class="flag">${flagEmoji(t.team)}</span><span class="nm">${esc(t.team)}</span></span></td>
+        <td class="team-cell"><span class="tc">${logoFor(t.team)}<span class="nm">${esc(t.team)}</span></span></td>
         <td>${t.P}</td><td>${t.W}</td><td>${t.D}</td><td>${t.L}</td>
         <td>${t.GF}:${t.GA}</td>
         <td class="pts">${t.Pts}</td>
@@ -945,7 +969,7 @@ function renderRankings() {
   for (const list of Object.values(GROUP_TEAMS)) for (const t of list) teams.push(t);
   teams.sort((a, b) => teamRank(a) - teamRank(b) || a.localeCompare(b));
   el('rankingsList').innerHTML = teams.map(t =>
-    `<div class="rk-row"><span class="rkpos">${teamRank(t)}</span><span class="flag">${flagEmoji(t)}</span><span class="nm">${esc(t)}</span></div>`
+    `<div class="rk-row"><span class="rkpos">${teamRank(t)}</span>${logoFor(t)}<span class="nm">${esc(t)}</span></div>`
   ).join('');
 }
 
