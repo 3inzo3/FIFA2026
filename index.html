@@ -321,6 +321,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
+  VERSION: 'v7',                // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -923,10 +924,10 @@ function renderDiag() {
   const d = el('diag');
   if (STATE.loading) { d.innerHTML = ''; return; }
   if (STATE.error) {
-    d.innerHTML = `Šaltinis: <code>TheSportsDB</code> · Lyga <code>${CONFIG.LEAGUE_ID}</code> · Bandyta: ${esc(STATE.diagTried.join(', '))}`;
+    d.innerHTML = `<code>${CONFIG.VERSION}</code> · Šaltinis: <code>TheSportsDB</code> · Lyga <code>${CONFIG.LEAGUE_ID}</code> · Bandyta: ${esc(STATE.diagTried.join(', '))}`;
     return;
   }
-  d.innerHTML = `Šaltinis: <code>TheSportsDB</code> · Lyga <code>${CONFIG.LEAGUE_ID}</code> · ` +
+  d.innerHTML = `<code>${CONFIG.VERSION}</code> · Šaltinis: <code>TheSportsDB</code> · Lyga <code>${CONFIG.LEAGUE_ID}</code> · ` +
     `Sezonas <code>${esc(STATE.season || '—')}</code> · Endpointas <code>${esc(STATE.endpointUsed || '—')}</code> · ` +
     `Įvykių: <code>${STATE.events.length}</code>`;
 }
