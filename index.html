@@ -328,7 +328,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v12',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v13',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -358,17 +358,17 @@ const STATE = {
 //    stipresnė komanda. Komandoms be reitingo duodame numatytą žemą (50).
 // --------------------------------------------------------------------
 const FIFA_RANK = {
-  // Apytiksliai FIFA reitingai (~2026-06). Mažesnis skaičius = stipresnė komanda.
+  // Oficialūs FIFA/Coca-Cola Men's World Ranking (2026-06-11 leidimas). Mažesnis = stipresnė.
   'argentina': 1, 'spain': 2, 'france': 3, 'england': 4, 'portugal': 5,
-  'brazil': 6, 'netherlands': 7, 'morocco': 8, 'belgium': 9, 'germany': 10,
-  'croatia': 11, 'colombia': 13, 'mexico': 14, 'senegal': 15, 'united states': 16,
-  'uruguay': 17, 'japan': 18, 'switzerland': 19, 'iran': 20, 'south korea': 21,
-  'austria': 23, 'australia': 24, 'ecuador': 25, 'canada': 26, 'sweden': 28,
-  'turkey': 29, 'norway': 31, 'egypt': 32, 'panama': 33, 'czech republic': 36,
-  'scotland': 37, 'ivory coast': 39, 'paraguay': 41, 'tunisia': 42, 'algeria': 45,
-  'dr congo': 46, 'qatar': 47, 'south africa': 48, 'saudi arabia': 49, 'uzbekistan': 50,
-  'ghana': 51, 'iraq': 57, 'jordan': 63, 'cape verde': 67, 'bosniaherzegovina': 74,
-  'curacao': 80, 'haiti': 85, 'new zealand': 86,
+  'brazil': 6, 'morocco': 7, 'netherlands': 8, 'belgium': 9, 'germany': 10,
+  'croatia': 11, 'colombia': 13, 'mexico': 14, 'senegal': 15, 'uruguay': 16,
+  'united states': 17, 'japan': 18, 'switzerland': 19, 'iran': 20, 'turkey': 22,
+  'ecuador': 23, 'austria': 24, 'south korea': 25, 'australia': 27, 'algeria': 28,
+  'egypt': 29, 'canada': 30, 'norway': 31, 'ivory coast': 33, 'panama': 34,
+  'sweden': 38, 'czech republic': 40, 'paraguay': 41, 'scotland': 42, 'tunisia': 45,
+  'dr congo': 46, 'uzbekistan': 50, 'qatar': 56, 'iraq': 57, 'south africa': 60,
+  'saudi arabia': 61, 'jordan': 63, 'bosniaherzegovina': 64, 'cape verde': 67, 'ghana': 73,
+  'curacao': 82, 'haiti': 83, 'new zealand': 85,
 };
 const RANK_DEFAULT = 50; // numatytas reitingas nežinomoms komandoms
 
