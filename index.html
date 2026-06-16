@@ -324,8 +324,6 @@ const CONFIG = {
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
-  TOURNEY_START: '2026-06-11',  // turnyro pradžia (eventsday rėžiui)
-  TOURNEY_END: '2026-07-19',    // turnyro pabaiga (finalas)
 };
 
 // --------------------------------------------------------------------
@@ -585,76 +583,35 @@ async function fetchJson(url) {
   }
 }
 
-// Datų sąrašas nuo–iki (masyvas „YYYY-MM-DD")
-function dateRange(start, end) {
-  const out = []; let d = new Date(start + 'T00:00:00Z'); const e = new Date(end + 'T00:00:00Z');
-  while (d <= e) { out.push(d.toISOString().slice(0, 10)); d = new Date(d.getTime() + 86400000); }
-  return out;
-}
-// Paprastas kešas naršyklėje (kad nereikėtų kas kartą siųsti visų dienų)
-function cacheGet(date) { try { const v = localStorage.getItem('wc_' + date); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
-function cacheSet(date, events) { try { localStorage.setItem('wc_' + date, JSON.stringify({ events, ts: Date.now() })); } catch (e) {} }
-// Užklausos dalimis (po kelias vienu metu – kad neperkrautume nemokamo API)
-async function fetchInBatches(items, worker, size) {
-  const res = [];
-  for (let i = 0; i < items.length; i += size) {
-    res.push(...await Promise.all(items.slice(i, i + size).map(worker)));
-  }
-  return res;
-}
-
-// Pagrindinis įkėlimas: imame VISO turnyro rungtynes per „eventsday" (kiekvieną
-// dieną atskirai). Šis endpointas grąžina pilną dienos programą su grupe ir
-// rezultatais. Praeities/ateities dienas kešuojame, kad atnaujinimas būtų greitas.
+// Pagrindinis įkėlimas. Nemokamas raktas „123" riboja „eventsseason" iki 15
+// rungtynių, BET „eventsround" grąžina VISAS vieno turo rungtynes (po 24) su
+// grupe ir rezultatais ir NĖRA ribojamas. 3 turai = visas grupių etapas (72).
+// „next"/„past" papildomai pagauna atkrintamąsias, kai komandos paaiškės.
 async function loadData() {
   STATE.loading = true; STATE.error = null;
-  STATE.diagTried = ['season/past/next + eventsday'];
+  STATE.diagTried = ['eventsround r=1,2,3 + next + past'];
   renderStatus(); setRefreshing(true);
 
-  const base = CONFIG.API_BASE, id = CONFIG.LEAGUE_ID, today = todayKey();
-  const byId = new Map();
+  const base = CONFIG.API_BASE, id = CONFIG.LEAGUE_ID;
   const arr = d => (d && Array.isArray(d.events)) ? d.events : [];
 
-  // 1) PATIKIMAS pagrindas (visada): sezonas (1-as turas) + paskutinės + būsimos.
-  //    Garantuoja, kad pasibaigusios ir artimiausios rungtynės tikrai bus rodomos.
-  const [seD, psD, nxD] = await Promise.all([
-    fetchJson(`${base}eventsseason.php?id=${id}&s=${CONFIG.SEASON}`),
-    fetchJson(`${base}eventspastleague.php?id=${id}`),
+  const [r1, r2, r3, nx, ps] = await Promise.all([
+    fetchJson(`${base}eventsround.php?id=${id}&r=1&s=${CONFIG.SEASON}`),
+    fetchJson(`${base}eventsround.php?id=${id}&r=2&s=${CONFIG.SEASON}`),
+    fetchJson(`${base}eventsround.php?id=${id}&r=3&s=${CONFIG.SEASON}`),
     fetchJson(`${base}eventsnextleague.php?id=${id}`),
+    fetchJson(`${base}eventspastleague.php?id=${id}`),
   ]);
-  let leagueCount = 0;
-  for (const ev of [...arr(seD), ...arr(psD), ...arr(nxD)]) {
-    if (ev && ev.idEvent && String(ev.idLeague) === id) { byId.set(ev.idEvent, ev); leagueCount++; }
+
+  // Sujungiame be dublikatų (pagal idEvent). „next"/„past" pirma, paskui turų
+  // duomenys (jie pilnesni – turi „strGroup" ir rezultatus) perrašo tą patį įvykį.
+  const byId = new Map();
+  for (const d of [nx, ps, r1, r2, r3]) {
+    for (const ev of arr(d)) if (ev && ev.idEvent && String(ev.idLeague) === id) byId.set(ev.idEvent, ev);
   }
-
-  // 2) PILNAS tvarkaraštis pagal dienas (eventsday), su kešavimu.
-  //    SVARBU: rungtynės saugomos pagal UTC datą, tad vėlyvos (po vidurnakčio LT)
-  //    patenka į ankstesnės dienos sąrašą – todėl apeiname VISAS turnyro dienas.
-  //    Dienas rikiuojame pagal artumą šiandienai – svarbiausios užsikrauna pirmos
-  //    (jei nemokamas raktas stabdytų, tolimos dienos dosiunčiamos vėliau).
-  const dates = dateRange(CONFIG.TOURNEY_START, CONFIG.TOURNEY_END);
-  const tMs = Date.parse(today + 'T00:00:00Z');
-  dates.sort((a, b) => Math.abs(Date.parse(a + 'T00:00:00Z') - tMs) - Math.abs(Date.parse(b + 'T00:00:00Z') - tMs));
-
-  let fetched = 0, fromCache = 0;
-  const worker = async (date) => {
-    const cached = cacheGet(date);
-    const isToday = date === today, isPast = date < today;
-    // praeitis su kešu – galutinė; ateitis su šviežiu kešu – stabili; šiandien – visada iš naujo
-    if (cached && (isPast || (!isToday && Date.now() - cached.ts < 6 * 3600000))) { fromCache++; return cached.events; }
-    const d = await fetchJson(`${base}eventsday.php?d=${date}&s=Soccer`);
-    if (d && ('events' in d)) {                  // atsakymas gautas (events: [] arba null = tuščia diena)
-      const wc = Array.isArray(d.events) ? d.events.filter(e => String(e.idLeague) === id) : [];
-      cacheSet(date, wc); fetched++; return wc;
-    }
-    return cached ? cached.events : [];           // tikra (tinklo) nesėkmė – naudok seną kešą
-  };
-  const perDay = await fetchInBatches(dates, worker, 5);
-  // eventsday duomenys turtingesni (turi „strGroup") – jie PERRAŠO league versiją
-  for (const list of perDay) for (const ev of list) if (ev && ev.idEvent) byId.set(ev.idEvent, ev);
-
   const events = [...byId.values()];
-  STATE.endpointUsed = `eventsday(${fetched} kraut./${fromCache} kešas) + league(${leagueCount})`;
+  const roundCount = arr(r1).length + arr(r2).length + arr(r3).length;
+  STATE.endpointUsed = `eventsround(${roundCount}) + next(${arr(nx).length}) + past(${arr(ps).length})`;
 
   if (events.length) {
     STATE.events = events;
