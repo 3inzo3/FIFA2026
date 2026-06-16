@@ -207,6 +207,19 @@
   .rk-row .flag { font-size: 19px; flex: none; }
   .rk-row .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+  /* Koeficientai (spėjami) */
+  .odds-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; }
+  .odds-teams { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: 14px; margin-bottom: 10px; }
+  .odds-teams .ot { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .odds-teams .ot .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .odds-teams .vs { color: var(--muted); flex: none; }
+  .odds-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .odd { background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; padding: 7px; text-align: center; }
+  .odd .k { display: block; font-size: 11px; color: var(--muted); font-weight: 700; }
+  .odd .v { display: block; font-size: 16px; font-weight: 800; margin-top: 2px; }
+  .odd.fav { border-color: var(--gold); }
+  .odd.fav .v { color: var(--gold); }
+
   /* ---------- Tinklelis (bracket) ---------- */
   .bracket-note { font-size: 12.5px; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
   .rounds { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
@@ -293,14 +306,10 @@
       <div class="rk-list" id="rankingsList"></div>
     </section>
 
-    <!-- 5) KOEFICIENTAI (2 fazė — kol kas tuščia) -->
+    <!-- 5) KOEFICIENTAI — spėjami (iš reitingų, NE bukmekerių) -->
     <section class="tab-panel" id="tab-odds">
-      <div class="soon">
-        <div class="big">💰</div>
-        <h2>Koeficientai</h2>
-        <div>Lažybų koeficientai bus pridėti vėliau<br>(reikės atskiro rakto ir Cloudflare Worker).</div>
-        <span class="tag">NETRUKUS</span>
-      </div>
+      <div class="rk-info" id="oddsInfo"></div>
+      <div id="oddsList"></div>
     </section>
   </main>
 
@@ -321,7 +330,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v7',                // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v8',                // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -473,6 +482,19 @@ function computeHype(ev) {
   return Math.max(1, Math.min(100, Math.round(h)));
 }
 function hypeClass(h) { return h >= 70 ? 'high' : h >= 45 ? 'mid' : 'low'; }
+
+// SPĖJAMI koeficientai (1 / X / 2) iš reitingų — NE bukmekerių, o mūsų įvertis.
+// Iš komandų „stiprumo" skirtumo gauname laimėjimo/lygiųjų tikimybes, koef. = 1/tikimybė.
+function computeOdds(ev) {
+  const s1 = teamStrength(ev.strHomeTeam), s2 = teamStrength(ev.strAwayTeam);
+  const d = s1 - s2;                                   // jėgų skirtumas
+  const pWin = 1 / (1 + Math.exp(-d / 18));            // stipresnės pusės laimėjimo dalis (be lygiųjų)
+  let pD = 0.32 - 0.0020 * Math.abs(d);                // lygiosios: kuo lygesnės jėgos, tuo didesnė
+  pD = Math.max(0.12, Math.min(0.32, pD));
+  const pH = (1 - pD) * pWin, pA = (1 - pD) * (1 - pWin);
+  const odd = p => Math.max(1.08, Math.min(29, Math.round(100 / Math.max(p, 0.01)) / 100));
+  return { oH: odd(pH), oD: odd(pD), oA: odd(pA) };
+}
 
 // --------------------------------------------------------------------
 // 6. LAIKAS — konvertuojame į Lietuvos laiką (Europe/Vilnius).
@@ -919,6 +941,39 @@ function renderRankings() {
   ).join('');
 }
 
+// 10.36 KOEFICIENTAI (spėjami) — būsimoms rungtynėms rodome 1 / X / 2
+function renderOdds() {
+  el('oddsInfo').innerHTML = `<b>Spėjami koeficientai</b> (1 / X / 2) — apskaičiuoti iš FIFA reitingų.
+    Tai <b>mano įvertis, NE bukmekerių</b> koeficientai. Mažesnis skaičius = didesnė tikimybė (favoritas pažymėtas auksiniu).`;
+  const wrap = el('oddsList');
+  if (STATE.loading || STATE.error) { wrap.innerHTML = ''; return; }
+
+  // tik būsimos/vykstančios rungtynės su tikromis komandomis
+  let list = STATE.events.filter(ev =>
+    isRealTeam(ev.strHomeTeam) && isRealTeam(ev.strAwayTeam) && kickoffDate(ev) && matchStatus(ev) !== 'done'
+  );
+  if (!list.length) { wrap.innerHTML = `<div class="empty">Būsimų rungtynių nėra.</div>`; return; }
+  list.sort((a, b) => kickoffDate(a) - kickoffDate(b));
+
+  let html = '', lastDay = null;
+  for (const ev of list) {
+    const d = kickoffDate(ev), key = vilniusKey(d);
+    if (key !== lastDay) { html += `<div class="day-head">${esc(dayLabel(key, d))}</div>`; lastDay = key; }
+    const o = computeOdds(ev);
+    const min = Math.min(o.oH, o.oD, o.oA);
+    const box = (k, v) => `<div class="odd${v === min ? ' fav' : ''}"><span class="k">${k}</span><span class="v">${v.toFixed(2)}</span></div>`;
+    html += `<div class="odds-card">
+      <div class="odds-teams">
+        <span class="ot"><span class="flag">${flagEmoji(ev.strHomeTeam)}</span><span class="nm">${esc(ev.strHomeTeam)}</span></span>
+        <span class="vs">–</span>
+        <span class="ot"><span class="flag">${flagEmoji(ev.strAwayTeam)}</span><span class="nm">${esc(ev.strAwayTeam)}</span></span>
+      </div>
+      <div class="odds-row">${box('1', o.oH)}${box('X', o.oD)}${box('2', o.oA)}</div>
+    </div>`;
+  }
+  wrap.innerHTML = html;
+}
+
 // 10.4 PORAŠTĖ / DIAGNOSTIKA
 function renderDiag() {
   const d = el('diag');
@@ -939,6 +994,7 @@ function renderAll() {
   renderTables();
   renderBracket();
   renderRankings();
+  renderOdds();
   renderDiag();
 }
 
