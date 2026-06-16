@@ -328,7 +328,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v11',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v12',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -719,13 +719,11 @@ const el = id => document.getElementById(id);
 // Mažas pagalbininkas saugiam tekstui (apsauga nuo HTML įterpimo)
 function esc(s) { return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
-// Komandos logotipas: tikras herbas (jei žinomas) arba vėliavos emoji kaip atsarga
-function teamLogo(name, badge) {
-  return badge
-    ? `<img class="crest" loading="lazy" src="${esc(badge)}/small" alt="" onerror="this.remove()">`
-    : `<span class="flag">${flagEmoji(name)}</span>`;
+// Komandos ženklas: šalies VĖLIAVA (emoji). (Anksčiau buvo herbai – pakeista į vėliavas.)
+function teamLogo(name) {
+  return `<span class="flag">${flagEmoji(name)}</span>`;
 }
-const logoFor = name => teamLogo(name, STATE.badges[normTeam(name)]);
+const logoFor = name => teamLogo(name);
 
 // 10.0 Būsenos juosta (kraunasi / klaida)
 function renderStatus() {
