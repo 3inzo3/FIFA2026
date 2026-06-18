@@ -328,7 +328,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v13',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v14',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -766,7 +766,7 @@ function renderMatches() {
   if (STATE.sortMode === 'hype') {
     // Pagal hype (didžiausias viršuje), be dienų grupavimo
     list.sort((a, b) => computeHype(b) - computeHype(a));
-    wrap.innerHTML = list.map(matchCard).join('');
+    wrap.innerHTML = list.map(ev => matchCard(ev, true)).join('');
   } else {
     // Pagal laiką: būsimos – didėjančia, pasibaigusios – mažėjančia (naujausios viršuje)
     list.sort((a, b) => finished ? kickoffDate(b) - kickoffDate(a) : kickoffDate(a) - kickoffDate(b));
@@ -785,7 +785,7 @@ function renderMatches() {
 }
 
 // Vienos rungtynių kortelės HTML
-function matchCard(ev) {
+function matchCard(ev, showDay = false) {
   const status = matchStatus(ev);
   const d = kickoffDate(ev);
   const g = groupOf(ev);
@@ -808,8 +808,11 @@ function matchCard(ev) {
   const awayWin = showScore && +ev.intAwayScore > +ev.intHomeScore;
 
   // Laiko eilutė: baigtoms rodome datą, būsimoms – datą ir laiką (LT)
-  // Dieną jau rodo antraštė (ŠIANDIEN / RYTOJ / data) – kortelėje tik laikas
-  const when = `<div class="when">🕒 <span class="t">${esc(vilniusTime(d))}</span> (LT)</div>`;
+  // Laikas. Rūšiuojant pagal laiką dieną rodo antraštė, tad kortelėje tik laikas;
+  // rūšiuojant pagal hype (antraščių nėra) – rodom dieną + savaitės dieną.
+  const when = showDay
+    ? `<div class="when">🕒 <span class="t">${esc(dayLabel(vilniusKey(d), d))}</span> · ${esc(vilniusTime(d))} (LT)</div>`
+    : `<div class="when">🕒 <span class="t">${esc(vilniusTime(d))}</span> (LT)</div>`;
 
   // Laimėjimo tikimybės iš realių koeficientų – tik dar nesužaistoms.
   // 1 ir 2 rodome PRIE pačių komandų (spalvos sutampa), X (lygiosios) – po juosta.
