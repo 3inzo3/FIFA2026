@@ -97,6 +97,7 @@
     border-radius: var(--radius); color: var(--muted); text-align: center;
   }
   .state-box.error { color: var(--text); border-color: #5a2d2d; background: #241a1c; flex-direction: column; }
+  .state-box.notice { color: var(--text); border-color: #5a4a2d; background: #221d14; font-size: 13.5px; line-height: 1.5; }
   .state-box.error .msg { color: var(--red); font-weight: 700; }
   .state-box .sub { font-size: 13px; color: var(--muted); }
   /* Paprastas sukimosi indikatorius */
@@ -140,6 +141,7 @@
     background: var(--card-2); color: var(--muted); border: 1px solid var(--line);
   }
   .pill.group { color: var(--gold); }
+  .pill.ko { color: #c4b5fd; }  /* atkrintamųjų etapas – violetinė */
   .pill.live { color: #fff; background: #7f1d1d; border-color: #b91c1c; }
   .pill.live::before { content: "● "; color: var(--red); animation: blink 1s infinite; }
   .pill.done { color: var(--green); }
@@ -223,19 +225,32 @@
   .winp { font-size: 16px; font-weight: 800; min-width: 46px; text-align: right; flex: none; }
   .winp.ph { color: var(--green); }
   .winp.pa { color: #818cf8; }
+  .est { font-size: 11px; color: var(--muted); font-weight: 700; margin-right: 1px; }  /* „≈" – įvertis, ne realūs koef. */
 
-  /* ---------- Tinklelis (bracket) ---------- */
-  .bracket-note { font-size: 12.5px; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
-  .rounds { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
-  .round { flex: none; width: 210px; }
-  .round h3 { font-size: 12.5px; color: var(--gold); text-transform: uppercase; letter-spacing: .5px; margin: 0 0 10px; }
-  .tie { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; margin-bottom: 10px; }
-  .tie .slot { display: flex; align-items: center; gap: 8px; padding: 5px 2px; font-size: 14px; }
-  .tie .slot + .slot { border-top: 1px solid var(--line); }
-  .tie .slot .flag { font-size: 17px; width: 22px; text-align: center; }
-  .tie .slot .lbl { color: var(--muted); font-weight: 600; }
-  .tie .slot .lbl.real { color: var(--text); }
-  .tie .slot .lbl.tbd { color: #5d6b7a; font-style: italic; }
+  /* ---------- Tinklelis (bracket) – klasikinis horizontalus medis ---------- */
+  .bracket-note { font-size: 12.5px; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; line-height: 1.5; }
+  .bracket-note b { color: var(--text); }
+  .bk-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; }
+  .bk-canvas { position: relative; }
+  .bk-head { position: absolute; top: 0; text-align: center; font-size: 12px; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: .4px; }
+  .bk-head span { display: block; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: none; letter-spacing: 0; margin-top: 2px; }
+  .bk-line { position: absolute; background: var(--line); }
+  .bk-tie { position: absolute; background: var(--card); border: 1px solid var(--line); border-radius: 9px; overflow: hidden; display: flex; flex-direction: column; }
+  .bk-slot { display: flex; align-items: center; gap: 6px; padding: 0 8px; height: 50%; font-size: 12.5px; min-width: 0; }
+  .bk-slot + .bk-slot { border-top: 1px solid var(--line); }
+  .bk-slot .flag { font-size: 14px; width: 17px; text-align: center; flex: none; }
+  .bk-slot .bk-nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-weight: 600; }
+  .bk-slot.tbd .bk-nm { color: #5d6b7a; font-style: italic; }
+  .bk-slot.lose .bk-nm { color: var(--muted); }
+  .bk-slot.win { background: rgba(229,181,103,.10); }
+  .bk-slot.win .bk-nm { color: #fff; font-weight: 800; }
+  .bk-sc { flex: none; font-weight: 800; font-size: 13px; color: var(--text); }
+  .bk-slot.lose .bk-sc { color: var(--muted); }
+  .bk-pct { flex: none; font-size: 11px; font-weight: 700; color: var(--muted); }
+  .bk-third { margin-top: 20px; max-width: 300px; }
+  .bk-third-h { font-size: 12px; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; }
+  .bk-third .bk-tie { position: static; width: auto !important; height: auto !important; }
+  .bk-third .bk-slot { height: 36px; }
 
   /* ---------- Koeficientai (placeholder) ---------- */
   .soon { text-align: center; padding: 40px 18px; color: var(--muted); }
@@ -300,7 +315,7 @@
     <!-- 3) TINKLELIS -->
     <section class="tab-panel" id="tab-bracket">
       <div class="bracket-note" id="bracketNote"></div>
-      <div class="rounds" id="bracketRounds"></div>
+      <div id="bracketRounds"></div>
     </section>
 
     <!-- 4) REITINGAI (FIFA reitingai + HYPE paaiškinimas) -->
@@ -328,7 +343,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v14',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v15',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -343,12 +358,14 @@ const STATE = {
   groups: {},          // apskaičiuotos grupių lentelės {A: {...}, B: {...}}
   odds: {},            // realių koeficientų tikimybės (iš odds.json)
   badges: {},          // komandų herbai (logo URL) iš API įvykių
+  koApi: null,         // atkrintamųjų rungtynės iš API (pagal komandų porą)
   endpointUsed: null,  // kuris endpointas davė duomenis (diagnostikai)
   activeTab: 'matches',
   sortMode: 'time',    // 'time' arba 'hype'
   matchFilter: 'upcoming', // 'upcoming' (būsimos) arba 'finished' (pasibaigusios)
   loading: false,
   error: null,
+  notice: null,        // švelnus pranešimas (ne klaida), pvz. API laikinai nepasiekiamas
   diagTried: [],       // ką bandėme (diagnostikai)
 };
 
@@ -456,6 +473,72 @@ for (const [g, teams] of Object.entries(GROUP_TEAMS)) {
 }
 
 // --------------------------------------------------------------------
+// 4c. ATKRINTAMOSIOS (knockout) — oficialus 2026 PČ tinklelis.
+//     Grupių etapui pasibaigus poros aiškios. Rungtynių numeriai (73–104)
+//     ir struktūra — pagal oficialią FIFA schemą. Laikai (UTC) bus
+//     patikslinti iš API, kai tik jis turės rungtynes; čia – tvarkaraštis,
+//     kad VISAS turas matytųsi iškart (ne tik 1 rungtynės).
+// --------------------------------------------------------------------
+const KO_R32 = [
+  { m: 73, h: 'South Africa',       a: 'Canada',             ts: '2026-06-28T19:00:00', city: 'Los Andželas' },
+  { m: 74, h: 'Germany',            a: 'Paraguay',           ts: '2026-06-29T20:30:00', city: 'Bostonas' },
+  { m: 75, h: 'Netherlands',        a: 'Morocco',            ts: '2026-06-30T01:00:00', city: 'Gvadalachara' },
+  { m: 76, h: 'Brazil',             a: 'Japan',              ts: '2026-06-29T17:00:00', city: 'Hjustonas' },
+  { m: 77, h: 'France',             a: 'Sweden',             ts: '2026-06-30T21:00:00', city: 'Niu Džersis' },
+  { m: 78, h: 'Ivory Coast',        a: 'Norway',             ts: '2026-06-30T17:00:00', city: 'Dalasas' },
+  { m: 79, h: 'Mexico',             a: 'Ecuador',            ts: '2026-07-01T01:00:00', city: 'Meksikas' },
+  { m: 80, h: 'England',            a: 'DR Congo',           ts: '2026-07-01T16:00:00', city: 'Atlanta' },
+  { m: 81, h: 'USA',                a: 'Bosnia-Herzegovina', ts: '2026-07-02T00:00:00', city: 'San Franciskas' },
+  { m: 82, h: 'Belgium',            a: 'Senegal',            ts: '2026-07-01T20:00:00', city: 'Sietlas' },
+  { m: 83, h: 'Portugal',           a: 'Croatia',            ts: '2026-07-02T23:00:00', city: 'Torontas' },
+  { m: 84, h: 'Spain',              a: 'Austria',            ts: '2026-07-02T19:00:00', city: 'Los Andželas' },
+  { m: 85, h: 'Switzerland',        a: 'Algeria',            ts: '2026-07-03T03:00:00', city: 'Vankuveris' },
+  { m: 86, h: 'Argentina',          a: 'Cape Verde',         ts: '2026-07-03T22:00:00', city: 'Majamis' },
+  { m: 87, h: 'Colombia',           a: 'Ghana',              ts: '2026-07-04T01:30:00', city: 'Kanzas Sitis' },
+  { m: 88, h: 'Australia',          a: 'Egypt',              ts: '2026-07-03T18:00:00', city: 'Dalasas' },
+];
+// Tolesnių etapų „maitintojai": kiekvienos poros komandos = nurodytų rungtynių laimėtojai.
+// (103 – dėl 3 vietos – ima PRALAIMĖTOJUS iš pusfinalių.)
+const KO_NEXT = {
+  89: [74, 77], 90: [73, 75], 91: [76, 78], 92: [79, 80],
+  93: [83, 84], 94: [81, 82], 95: [86, 88], 96: [85, 87],
+  97: [89, 90], 98: [93, 94], 99: [91, 92], 100: [95, 96],
+  101: [97, 98], 102: [99, 100],
+  104: [101, 102], // Finalas
+  103: [101, 102], // Dėl 3 vietos (pralaimėtojai)
+};
+// Tinklelio stulpeliai. „nums" – iš viršaus į apačią, kad gretimos poros jungtųsi.
+const BRACKET_COLS = [
+  { key: 'R32', title: '1/16 finalio',  sub: 'birž. 28 – liep. 4', nums: [74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87] },
+  { key: 'R16', title: '1/8 finalio',   sub: 'liepos 4–7',         nums: [89, 90, 93, 94, 91, 92, 95, 96] },
+  { key: 'QF',  title: 'Ketvirtfinaliai', sub: 'liepos 9–11',      nums: [97, 98, 99, 100] },
+  { key: 'SF',  title: 'Pusfinaliai',   sub: 'liepos 14–15',       nums: [101, 102] },
+  { key: 'F',   title: 'Finalas',       sub: 'liepos 19',          nums: [104] },
+];
+// Etapo pavadinimas pagal rungtynių numerį (kortelės ženkliukui)
+function koRoundName(m) {
+  if (m >= 73 && m <= 88) return '1/16 finalio';
+  if (m >= 89 && m <= 96) return '1/8 finalio';
+  if (m >= 97 && m <= 100) return 'Ketvirtfinalis';
+  if (m === 101 || m === 102) return 'Pusfinalis';
+  if (m === 103) return 'Dėl 3 vietos';
+  if (m === 104) return 'Finalas';
+  return 'Atkrintamosios';
+}
+// Etapo pavadinimas pagal datą — atkrintamosioms, kurios atėjo tiesiai iš API
+// (be mūsų numerio). Šios visada yra 1/8 ar vėliau (R32 turi savo numerius).
+function koRoundByDate(ev) {
+  const d = kickoffDate(ev);
+  if (!d) return 'Atkrintamosios';
+  const k = vilniusKey(d);
+  if (k <= '2026-07-07') return '1/8 finalio';
+  if (k <= '2026-07-11') return 'Ketvirtfinalis';
+  if (k <= '2026-07-15') return 'Pusfinalis';
+  if (k <= '2026-07-18') return 'Dėl 3 vietos';
+  return 'Finalas';
+}
+
+// --------------------------------------------------------------------
 // 5. HYPE BALAS (1–100) — skaičiuojame patys.
 // --------------------------------------------------------------------
 function teamRank(name) { return FIFA_RANK[normTeam(name)] || RANK_DEFAULT; }
@@ -485,12 +568,35 @@ function hypeClass(h) { return h >= 70 ? 'high' : h >= 45 ? 'mid' : 'low'; }
 
 // Komandos raktas koeficientų paieškai (be tarpų, kad sutaptų skirtingi vardai)
 const oddsKey = s => normTeam(s).replace(/\s+/g, '');
-// Realios laimėjimo tikimybės (1 / X / 2) rungtynėms iš odds.json žemėlapio (arba null)
+// Komandų poros raktas (tvarka nesvarbi) — koeficientų ir API atkrintamųjų paieškai
+const pairKey = (a, b) => [oddsKey(a), oddsKey(b)].sort().join('|');
+
+// Realios laimėjimo tikimybės rungtynėms iš odds.json žemėlapio (arba null).
+// Grupių etapas: 3-krypčių (1/X/2). Atkrintamosios: 2-krypčių „kas pereina" (be lygiųjų).
 function oddsForEvent(ev) {
   const kh = oddsKey(ev.strHomeTeam), ka = oddsKey(ev.strAwayTeam);
   const v = STATE.odds[[kh, ka].sort().join('|')];
   if (!v) return null;
-  return { ph: v[kh], pd: v.d, pa: v[ka] };  // ph=namų, pd=lygiosios, pa=svečių (%)
+  const twoWay = (v.d == null);              // jei nėra lygiųjų – tai 2-krypčių
+  return { ph: v[kh], pd: v.d, pa: v[ka], twoWay, est: false }; // ph=namų, pa=svečių (%)
+}
+
+// Apytikslė 2-krypčių „kas pereina toliau" tikimybė pagal FIFA reitingus.
+// Naudojama TIK kai nėra realių koeficientų (pvz. dar nepaskelbti vėlesni etapai).
+function koProb(home, away) {
+  const sh = teamStrength(home), sa = teamStrength(away);
+  const ph = 1 / (1 + Math.pow(10, (sa - sh) / 44)); // logistinė: stiprumo skirtumas -> tikimybė
+  const h = Math.max(5, Math.min(95, Math.round(ph * 100)));
+  return { ph: h, pa: 100 - h, twoWay: true, est: true };
+}
+
+// Tikimybės būsimoms rungtynėms: realūs koeficientai; jei jų nėra ir tai
+// atkrintamosios – grąžiname įvertį pagal reitingus (pažymėtą „≈").
+function winProbs(ev) {
+  const od = oddsForEvent(ev);
+  if (od) return od;
+  if (isKnockoutEvent(ev)) return koProb(ev.strHomeTeam, ev.strAwayTeam);
+  return null;
 }
 
 // --------------------------------------------------------------------
@@ -603,12 +709,40 @@ async function fetchJson(url) {
   }
 }
 
+// Iš tinklelio aprašo (KO_R32) padaro „įvykio" objektą, suderinamą su likusiu
+// kodu. Jei API jau turi tas rungtynes (pagal komandų porą) – paima realų
+// laiką, statusą ir rezultatą (teisingai sukeičia namus/svečius, jei reikia).
+function buildKoEvent(r, api) {
+  const ev = {
+    idEvent: 'ko-' + r.m, idLeague: CONFIG.LEAGUE_ID,
+    strHomeTeam: r.h, strAwayTeam: r.a,
+    strTimestamp: r.ts, dateEvent: r.ts.slice(0, 10), strTime: r.ts.slice(11),
+    intHomeScore: null, intAwayScore: null, strStatus: 'NS',
+    _ko: r.m, _city: r.city,
+  };
+  if (api) {
+    const sameOrient = normTeam(api.strHomeTeam) === normTeam(r.h);
+    if (api.strTimestamp) ev.strTimestamp = api.strTimestamp;
+    if (api.dateEvent) ev.dateEvent = api.dateEvent;
+    if (api.strTime) ev.strTime = api.strTime;
+    if (api.strStatus) ev.strStatus = api.strStatus;
+    const hs = api.intHomeScore, as = api.intAwayScore;
+    if (hs != null && hs !== '' && as != null && as !== '') {
+      ev.intHomeScore = sameOrient ? hs : as;
+      ev.intAwayScore = sameOrient ? as : hs;
+    }
+    if (api.strHomeTeamBadge) STATE.badges[normTeam(sameOrient ? r.h : r.a)] = api.strHomeTeamBadge;
+    if (api.strAwayTeamBadge) STATE.badges[normTeam(sameOrient ? r.a : r.h)] = api.strAwayTeamBadge;
+  }
+  return ev;
+}
+
 // Pagrindinis įkėlimas. Nemokamas raktas „123" riboja „eventsseason" iki 15
 // rungtynių, BET „eventsround" grąžina VISAS vieno turo rungtynes (po 24) su
 // grupe ir rezultatais ir NĖRA ribojamas. 3 turai = visas grupių etapas (72).
 // „next"/„past" papildomai pagauna atkrintamąsias, kai komandos paaiškės.
 async function loadData() {
-  STATE.loading = true; STATE.error = null;
+  STATE.loading = true; STATE.error = null; STATE.notice = null;
   STATE.diagTried = ['eventsround r=1,2,3 + next + past'];
   renderStatus(); setRefreshing(true);
 
@@ -648,19 +782,35 @@ async function loadData() {
     if (ev.strAwayTeamBadge) STATE.badges[normTeam(ev.strAwayTeam)] = ev.strAwayTeamBadge;
   }
 
-  const roundCount = arr(r1).length + arr(r2).length + arr(r3).length;
-  STATE.endpointUsed = `eventsround(${roundCount}) + next(${arr(nx).length}) + past(${arr(ps).length})`;
+  // Atkrintamosios. API jas grąžina pamažu (ir dažnai be tikrų komandų vardų),
+  // todėl turą susidedame iš oficialaus tinklelio, o realų laiką/rezultatą
+  // (jei jau yra) paimame iš API pagal komandų porą. Taip „Būsimos" rodo
+  // VISAS likusias atkrintamųjų rungtynes, o ne vieną.
+  STATE.koApi = new Map();
+  for (const ev of events) {
+    if (isKnockoutEvent(ev)) STATE.koApi.set(pairKey(ev.strHomeTeam, ev.strAwayTeam), ev);
+  }
+  const koEvents = KO_R32.map(r => buildKoEvent(r, STATE.koApi.get(pairKey(r.h, r.a))));
+  // API atkrintamosios, kurių nėra mūsų R32 sąraše (pvz. jau aiškios 1/8 poros)
+  const r32keys = new Set(KO_R32.map(r => pairKey(r.h, r.a)));
+  const koExtra = [...STATE.koApi.entries()].filter(([k]) => !r32keys.has(k)).map(([, ev]) => ev);
+  // Galutinis sąrašas: grupių etapas (iš API) + atkrintamosios (tinklelis + API)
+  const groupEvents = events.filter(ev => groupOf(ev) !== null);
+  const finalEvents = [...groupEvents, ...koEvents, ...koExtra];
 
-  if (events.length) {
-    STATE.events = events;
-    STATE.groups = computeGroups(events);
-    STATE.season = CONFIG.SEASON;
-    STATE.error = null;
-    console.log(`✅ ${events.length} įvykiai · ${STATE.endpointUsed}`);
+  const roundCount = arr(r1).length + arr(r2).length + arr(r3).length;
+  STATE.endpointUsed = `eventsround(${roundCount}) + next(${arr(nx).length}) + past(${arr(ps).length}) + KO(${koEvents.length})`;
+
+  STATE.events = finalEvents;
+  STATE.groups = computeGroups(events);
+  STATE.season = CONFIG.SEASON;
+  STATE.error = null;
+  if (!events.length) {
+    // API nieko negrąžino — bent jau rodome atkrintamųjų tvarkaraštį iš tinklelio.
+    STATE.notice = 'Gyvi duomenys (rezultatai ir lentelės) kol kas nepasiekiami — rodomas atkrintamųjų tvarkaraštis. Spausk „Atnaujinti".';
+    console.warn('⚠️ API be duomenų — rodomas tik KO tvarkaraštis.');
   } else {
-    STATE.events = []; STATE.groups = {};
-    STATE.error = 'Nepavyko įkelti duomenų — bandyk atnaujinti.';
-    console.error('❌ Negauta jokių World Cup duomenų.');
+    console.log(`✅ ${finalEvents.length} įvykiai · ${STATE.endpointUsed}`);
   }
 
   STATE.loading = false; setRefreshing(false); renderAll();
@@ -735,6 +885,8 @@ function renderStatus() {
       <div class="msg">${esc(STATE.error)}</div>
       <div class="sub">Patikrink interneto ryšį ir spausk „Atnaujinti".</div>
     </div>`;
+  } else if (STATE.notice) {
+    box.innerHTML = `<div class="state-box notice">${esc(STATE.notice)}</div>`;
   } else {
     box.innerHTML = '';
   }
@@ -795,10 +947,10 @@ function matchCard(ev, showDay = false) {
   // rodo pati kortelė – tad nereikia papildomo „Būsima"/„Baigta" ženkliuko.
   const statusPill = (status === 'live') ? `<span class="pill live">VYKSTA</span>` : '';
 
-  // Grupės arba etapo ženkliukas
+  // Grupės arba atkrintamųjų etapo ženkliukas
   const stagePill = g
     ? `<span class="pill group">${esc(g)} grupė</span>`
-    : `<span class="pill group">Atkrintamosios</span>`;
+    : `<span class="pill ko">${esc(ev._ko ? koRoundName(ev._ko) : koRoundByDate(ev))}</span>`;
 
   // Rezultatas (jei baigta/vyksta) arba tuščia
   const showScore = (status === 'done' || status === 'live') && hasScore(ev);
@@ -807,22 +959,39 @@ function matchCard(ev, showDay = false) {
   const homeWin = showScore && +ev.intHomeScore > +ev.intAwayScore;
   const awayWin = showScore && +ev.intAwayScore > +ev.intHomeScore;
 
-  // Laiko eilutė: baigtoms rodome datą, būsimoms – datą ir laiką (LT)
-  // Laikas. Rūšiuojant pagal laiką dieną rodo antraštė, tad kortelėje tik laikas;
-  // rūšiuojant pagal hype (antraščių nėra) – rodom dieną + savaitės dieną.
+  // Laiko eilutė. Rūšiuojant pagal laiką dieną rodo antraštė (kortelėje tik laikas);
+  // pagal hype (antraščių nėra) – rodom dieną. Atkrintamosioms pridedame miestą.
+  const cityTxt = ev._city ? ` · 📍 ${esc(ev._city)}` : '';
   const when = showDay
-    ? `<div class="when">🕒 <span class="t">${esc(dayLabel(vilniusKey(d), d))}</span> · ${esc(vilniusTime(d))} (LT)</div>`
-    : `<div class="when">🕒 <span class="t">${esc(vilniusTime(d))}</span> (LT)</div>`;
+    ? `<div class="when">🕒 <span class="t">${esc(dayLabel(vilniusKey(d), d))}</span> · ${esc(vilniusTime(d))} (LT)${cityTxt}</div>`
+    : `<div class="when">🕒 <span class="t">${esc(vilniusTime(d))}</span> (LT)${cityTxt}</div>`;
 
-  // Laimėjimo tikimybės iš realių koeficientų – tik dar nesužaistoms.
-  // 1 ir 2 rodome PRIE pačių komandų (spalvos sutampa), X (lygiosios) – po juosta.
-  const od = (status !== 'done') ? oddsForEvent(ev) : null;
-  const homeRight = showScore ? `<span class="score">${hs}</span>` : (od ? `<span class="winp ph">${od.ph}%</span>` : '');
-  const awayRight = showScore ? `<span class="score">${as}</span>` : (od ? `<span class="winp pa">${od.pa}%</span>` : '');
-  const probs = od ? `<div class="probs">
+  // Laimėjimo tikimybės – tik dar nesužaistoms. Grupių etapas: 3-krypčių (1/X/2).
+  // Atkrintamosios: 2-krypčių „kas pereina toliau" (be lygiųjų). Jei realių
+  // koeficientų nėra – atkrintamosioms rodome įvertį pagal reitingus („≈").
+  const od = (status !== 'done') ? winProbs(ev) : null;
+  let homeRight, awayRight, probs = '';
+  if (showScore) {
+    homeRight = `<span class="score">${hs}</span>`;
+    awayRight = `<span class="score">${as}</span>`;
+  } else if (od && od.twoWay) {
+    const mark = od.est ? `<span class="est">≈</span>` : '';
+    homeRight = `<span class="winp ph">${mark}${od.ph}%</span>`;
+    awayRight = `<span class="winp pa">${od.pa}%</span>`;
+    probs = `<div class="probs">
+      <div class="pbar two"><i class="ph" style="width:${od.ph}%"></i><i class="pa" style="width:${od.pa}%"></i></div>
+      <div class="xdraw">${od.est ? 'Įvertis pagal reitingus' : 'Tikimybė pereiti toliau'}</div>
+    </div>`;
+  } else if (od) {
+    homeRight = `<span class="winp ph">${od.ph}%</span>`;
+    awayRight = `<span class="winp pa">${od.pa}%</span>`;
+    probs = `<div class="probs">
       <div class="pbar"><i class="ph" style="width:${od.ph}%"></i><i class="pd" style="width:${od.pd}%"></i><i class="pa" style="width:${od.pa}%"></i></div>
       <div class="xdraw">Lygiosios (X) · ${od.pd}%</div>
-    </div>` : '';
+    </div>`;
+  } else {
+    homeRight = ''; awayRight = '';
+  }
 
   return `<div class="match">
     <div class="top">
@@ -882,74 +1051,144 @@ function renderTables() {
   }).join('');
 }
 
-// 10.3 TINKLELIS (bracket)
-//    Round of 32 struktūra pagal oficialią FIFA schemą. Komandų vardus
-//    įrašome tik tada, kai grupė jau pilnai sužaista (1-a/2-a vieta aiški).
-//    3-čių vietų poros priklauso nuo to, kurios 8 (iš 12) trečių vietų kyla
-//    (FIFA 495 scenarijų lentelė), todėl jos rodomos kaip „TBD".
-const R32 = [
-  // Kairė pusė
-  ['2A', '2B'], ['1E', '3?'], ['1F', '2C'], ['1C', '3?'],
-  ['1I', '3?'], ['2D', '2G'], ['1A', '3?'], ['1B', '2F'],
-  // Dešinė pusė
-  ['1J', '2L'], ['1H', '3?'], ['1K', '3?'], ['2E', '2I'],
-  ['1D', '3?'], ['1G', '2J'], ['1L', '3?'], ['2H', '2K'],
-];
+// 10.3 TINKLELIS (bracket) — klasikinis horizontalus medis.
+//    R32 poros žinomos (grupių etapas baigtas). Tolesni etapai užsipildo
+//    automatiškai: kiekvienos poros komanda = ankstesnių rungtynių laimėtojas
+//    (rezultatai imami iš API). Pozicijas skaičiuojame patys (absoliutus
+//    išdėstymas), kad jungiamosios linijos būtų tikslios.
 
-// Ar grupė pilnai sužaista? (visos komandos sužaidė po 3 rungtynes)
-function groupFinished(g) {
-  const rows = STATE.groups[g];
-  if (!rows || rows.length < 4) return false;
-  return rows.every(t => t.P >= 3);
+// Atkrintamųjų įvykis pagal rungtynių numerį (egzistuoja tik R32 – kaip įvykiai)
+function koEventByNum(n) { return STATE.events.find(e => e._ko === n); }
+// Pralaimėtojas (dėl 3 vietos) – kai pora sužaista ir aiškus nugalėtojas
+function koLoser(m) {
+  if (!m || !m.done || !m.winner) return null;
+  return m.winner === m.home ? m.away : m.home;
 }
-// Komandos vardas pagal poziciją „1A" / „2B" (jei dar neaišku – pati etiketė)
-function slotTeam(code) {
-  const m = code.match(/^([12])([A-L])$/);
-  if (!m) return { text: '3-čia vieta', tbd: true }; // „3?" – trečios vietos
-  const pos = +m[1], g = m[2];
-  if (groupFinished(g) && STATE.groups[g] && STATE.groups[g][pos - 1]) {
-    return { text: STATE.groups[g][pos - 1].team, tbd: false };
+
+// Sudaro visą tinklelį: numeris -> { home, away, hKnown, aKnown, hs, as, status, done, winner }
+function koResolve() {
+  const R = {};
+  // 1) R32 – komandos žinomos iš tinklelio; rezultatai iš (su API sulietų) įvykių
+  for (const r of KO_R32) {
+    const ev = koEventByNum(r.m);
+    const st = ev ? matchStatus(ev) : 'upcoming';
+    const done = !!(ev && st === 'done' && hasScore(ev));
+    let winner = null;
+    if (done) {
+      const a = +ev.intHomeScore, b = +ev.intAwayScore;
+      winner = a > b ? r.h : b > a ? r.a : null; // lygiosios -> 11 m, nežinom -> null
+    }
+    R[r.m] = {
+      home: r.h, away: r.a, hKnown: true, aKnown: true,
+      hs: ev ? ev.intHomeScore : null, as: ev ? ev.intAwayScore : null,
+      status: st, done, winner,
+    };
   }
-  // Dar neaišku – rodome poziciją (pvz., „A grupės nugalėtojas")
-  const label = pos === 1 ? `${g} grupės nugalėtojas` : `${g} grupės 2-a vieta`;
-  return { text: label, tbd: true };
+  // 2) 1/8 -> Finalas: komandos = maitintojų laimėtojai; rezultatas iš API pagal porą
+  for (const n of [89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 104, 103]) {
+    const [f1, f2] = KO_NEXT[n];
+    const takeLoser = (n === 103);
+    const t1 = takeLoser ? koLoser(R[f1]) : (R[f1] ? R[f1].winner : null);
+    const t2 = takeLoser ? koLoser(R[f2]) : (R[f2] ? R[f2].winner : null);
+    const e = { home: t1, away: t2, hKnown: !!t1, aKnown: !!t2, hs: null, as: null, status: 'upcoming', done: false, winner: null };
+    if (t1 && t2 && STATE.koApi) {
+      const api = STATE.koApi.get(pairKey(t1, t2));
+      if (api) {
+        const same = normTeam(api.strHomeTeam) === normTeam(t1);
+        e.status = matchStatus(api);
+        if (api.intHomeScore != null && api.intHomeScore !== '' && api.intAwayScore != null) {
+          e.hs = same ? api.intHomeScore : api.intAwayScore;
+          e.as = same ? api.intAwayScore : api.intHomeScore;
+          e.done = e.status === 'done';
+          if (e.done) { const a = +e.hs, b = +e.as; e.winner = a > b ? t1 : b > a ? t2 : null; }
+        }
+      }
+    }
+    R[n] = e;
+  }
+  return R;
 }
 
-function slotHtml(code) {
-  const r = slotTeam(code);
-  const flag = r.tbd ? '' : flagEmoji(r.text);
-  return `<div class="slot">
-    <span class="flag">${flag}</span>
-    <span class="lbl ${r.tbd ? 'tbd' : 'real'}">${esc(r.text)}</span>
-  </div>`;
+// Viena jungiamoji linija (absoliučios koordinatės)
+function bkLine(x1, y1, x2, y2) {
+  const left = Math.min(x1, x2), top = Math.min(y1, y2);
+  const w = Math.max(2, Math.abs(x2 - x1)), h = Math.max(2, Math.abs(y2 - y1));
+  return `<div class="bk-line" style="left:${left}px;top:${top}px;width:${w}px;height:${h}px;"></div>`;
 }
-// Tuščias (TBD) lizdas tolesniems etapams
-function tbdSlot(label) {
-  return `<div class="slot"><span class="flag"></span><span class="lbl tbd">${esc(label)}</span></div>`;
+// Viena tinklelio kortelės eilutė (komanda)
+function bkSlot(m, side, num, probH, probA) {
+  const known = side === 'home' ? m.hKnown : m.aKnown;
+  const name = side === 'home' ? m.home : m.away;
+  const score = side === 'home' ? m.hs : m.as;
+  const isWin = m.done && m.winner && m.winner === name;
+  const isLoseDone = m.done && m.winner && m.winner !== name;
+  const flag = known ? flagEmoji(name) : '';
+  const label = known ? esc(name) : '—';
+  let right = '';
+  if (score != null && score !== '') right = `<span class="bk-sc">${esc(score)}</span>`;
+  else if (!m.done && known) { const p = side === 'home' ? probH : probA; if (p != null) right = `<span class="bk-pct">${p}%</span>`; }
+  return `<div class="bk-slot ${isWin ? 'win' : ''} ${isLoseDone ? 'lose' : ''} ${known ? '' : 'tbd'}">
+    <span class="flag">${flag}</span><span class="bk-nm">${label}</span>${right}</div>`;
+}
+// Kortelė (su pozicija) arba „plokščia" (dėl 3 vietos)
+function bkTie(m, num, style) {
+  let probH = null, probA = null;
+  if (m && !m.done && m.hKnown && m.aKnown) {
+    const p = winProbs({ strHomeTeam: m.home, strAwayTeam: m.away, _ko: num });
+    if (p && p.twoWay) { probH = p.ph; probA = p.pa; }
+  }
+  const safe = m || { hKnown: false, aKnown: false };
+  return `<div class="bk-tie" style="${style}">${bkSlot(safe, 'home', num, probH, probA)}${bkSlot(safe, 'away', num, probH, probA)}</div>`;
 }
 
 function renderBracket() {
+  const R = koResolve();
   el('bracketNote').innerHTML =
-    'Tinklelio struktūra — pagal oficialią FIFA schemą. Komandos įrašomos, kai grupė pilnai sužaista. ' +
-    '3-čių vietų poros priklauso nuo to, kurios 8 trečios vietos kyla (FIFA 495 scenarijų lentelė), todėl kol kas — „TBD". ' +
-    'Slinkite į šoną →';
+    '<b>Atkrintamosios.</b> R32 poros aiškios — grupių etapas baigtas. Vėlesni etapai užsipildo automatiškai, kai sužaidžiamos rungtynės. ' +
+    'Procentai — tikimybė pereiti toliau (realūs koeficientai; „≈" — įvertis). Slinkite į šoną ir žemyn →';
 
-  // R32 stulpelis (16 porų)
-  const r32 = R32.map((pair, i) =>
-    `<div class="tie">${slotHtml(pair[0])}${slotHtml(pair[1])}</div>`
-  ).join('');
+  // Geometrija
+  const TIE_H = 58, ROW_GAP = 16, COL_W = 166, COL_GAP = 34, HEAD_H = 42;
+  const rowH = TIE_H + ROW_GAP;
+  const n0 = BRACKET_COLS[0].nums.length;          // 16
+  const totalH = n0 * rowH;
+  // Kiekvieno stulpelio kortelių CENTRAI (y)
+  const centers = [];
+  BRACKET_COLS.forEach((col, ci) => {
+    centers[ci] = ci === 0
+      ? col.nums.map((_, i) => i * rowH + rowH / 2)
+      : col.nums.map((_, i) => (centers[ci - 1][2 * i] + centers[ci - 1][2 * i + 1]) / 2);
+  });
 
-  // Tolesni etapai — tušti lizdai (užsipildys vykstant turnyrui)
-  const makeBlank = (n, label) => Array.from({ length: n }, () =>
-    `<div class="tie">${tbdSlot(label)}${tbdSlot(label)}</div>`).join('');
+  const W = BRACKET_COLS.length * COL_W + (BRACKET_COLS.length - 1) * COL_GAP;
+  let lines = '', cards = '';
 
-  el('bracketRounds').innerHTML = `
-    <div class="round"><h3>1/16 (R32)</h3>${r32}</div>
-    <div class="round"><h3>Aštuntfinaliai</h3>${makeBlank(8, 'Laukiama')}</div>
-    <div class="round"><h3>Ketvirtfinaliai</h3>${makeBlank(4, 'Laukiama')}</div>
-    <div class="round"><h3>Pusfinaliai</h3>${makeBlank(2, 'Laukiama')}</div>
-    <div class="round"><h3>Finalas</h3>${makeBlank(1, 'Laukiama')}</div>
-  `;
+  BRACKET_COLS.forEach((col, ci) => {
+    const x = ci * (COL_W + COL_GAP);
+    // Stulpelio antraštė
+    cards += `<div class="bk-head" style="left:${x}px;width:${COL_W}px;">${esc(col.title)}<span>${esc(col.sub)}</span></div>`;
+    col.nums.forEach((num, i) => {
+      const cy = HEAD_H + centers[ci][i];
+      cards += bkTie(R[num], num, `left:${x}px;top:${cy - TIE_H / 2}px;width:${COL_W}px;height:${TIE_H}px;`);
+      // Jungiamosios linijos į kitą stulpelį
+      if (ci < BRACKET_COLS.length - 1) {
+        const rightX = x + COL_W, midX = rightX + COL_GAP / 2;
+        const ncy = HEAD_H + centers[ci + 1][Math.floor(i / 2)];
+        lines += bkLine(rightX, cy, midX, cy);            // horizontali nuo kortelės
+        lines += bkLine(midX, cy, midX, ncy);             // vertikali iki poros vidurio
+        if (i % 2 === 0) lines += bkLine(midX, ncy, rightX + COL_GAP, ncy); // į kitą kortelę
+      }
+    });
+  });
+
+  // Dėl 3-ios vietos — atskira kortelė po medžiu
+  const third = `<div class="bk-third">
+      <div class="bk-third-h">Dėl 3-ios vietos · liepos 18</div>
+      ${bkTie(R[103], 103, '')}
+    </div>`;
+
+  el('bracketRounds').innerHTML =
+    `<div class="bk-wrap"><div class="bk-canvas" style="width:${W}px;height:${totalH + HEAD_H}px;">${lines}${cards}</div></div>${third}`;
 }
 
 // 10.35 REITINGAI (FIFA reitingai + HYPE paaiškinimas)
