@@ -27,10 +27,12 @@ Atidaryk `index.html` naršyklėje (telefone ar kompiuteryje). Duomenys
 - Lyga: **FIFA World Cup, `idLeague = 4429`**, sezonas **`2026`**.
 - Grupių etapas: **`eventsround.php`** turais (r=1,2,3) — grąžina visas 72
   rungtynes su grupėmis ir rezultatais (nemokamame rakte neribojama).
-- Atkrintamosios: **`eventsnextleague.php`** + **`eventspastleague.php`**.
-  Kadangi API jas paskelbia pamažu, turo „karkasą" (poras ir tvarkaraštį)
-  laikome pagal oficialią FIFA schemą, o realų laiką/rezultatą paimame iš API,
-  kai tik jis atsiranda. Taip iškart matosi **visos** likusios rungtynės.
+- Atkrintamosios: turo „karkasą" (poras ir tvarkaraštį) laikome pagal oficialią
+  FIFA schemą, kad iškart matytųsi **visos** likusios rungtynės. Realius
+  **rezultatus** traukiame per **`eventsday.php`** kiekvienai praėjusiai
+  atkrintamųjų dienai (šis endpointas patikimas; `eventspastleague` nemokamame
+  rakte grąžina vos po 1). Komandos sujungiamos pagal porą, todėl laikas ir
+  rezultatas įsilieja automatiškai.
 - **Koeficientai** — `odds.json` (statinis failas, be API rakto). Realūs
   bukmekerių koeficientai paversti tikimybėmis (pašalinus maržą). Atkrintamosioms,
   kurioms koeficientų dar nėra, rodomas įvertis pagal reitingus (žymimas „≈").

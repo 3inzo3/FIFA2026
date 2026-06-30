@@ -343,7 +343,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v15',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v16',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -507,6 +507,16 @@ const KO_NEXT = {
   104: [101, 102], // Finalas
   103: [101, 102], // Dėl 3 vietos (pralaimėtojai)
 };
+// Visos atkrintamųjų dienos (UTC datos) — pagal jas traukiame REZULTATUS per
+// „eventsday" (jis patikimas ir negrąžina po 1, skirtingai nei „past/next league").
+const KO_DAYS = [
+  '2026-06-28', '2026-06-29', '2026-06-30', '2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04', // 1/16
+  '2026-07-05', '2026-07-06', '2026-07-07',                                                          // 1/8
+  '2026-07-09', '2026-07-10', '2026-07-11',                                                          // ketvirtfinaliai
+  '2026-07-14', '2026-07-15',                                                                        // pusfinaliai
+  '2026-07-18', '2026-07-19',                                                                        // dėl 3 vietos / finalas
+];
+
 // Tinklelio stulpeliai. „nums" – iš viršaus į apačią, kad gretimos poros jungtųsi.
 const BRACKET_COLS = [
   { key: 'R32', title: '1/16 finalio',  sub: 'birž. 28 – liep. 4', nums: [74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87] },
@@ -743,19 +753,26 @@ function buildKoEvent(r, api) {
 // „next"/„past" papildomai pagauna atkrintamąsias, kai komandos paaiškės.
 async function loadData() {
   STATE.loading = true; STATE.error = null; STATE.notice = null;
-  STATE.diagTried = ['eventsround r=1,2,3 + next + past'];
   renderStatus(); setRefreshing(true);
 
   const base = CONFIG.API_BASE, id = CONFIG.LEAGUE_ID;
   const arr = d => (d && Array.isArray(d.events)) ? d.events : [];
 
-  const [r1, r2, r3, nx, ps, oddsData] = await Promise.all([
+  // Atkrintamųjų REZULTATUS traukiame per „eventsday" tik PRAĖJUSIOMS / šios dienos
+  // dienoms (būsimoms rezultatų dar nėra) — taip nešvaistom užklausų ir apeiname
+  // „past/next league" ribojimą (grąžina po 1).
+  const today = todayKey();
+  const koDays = KO_DAYS.filter(d => d <= today);
+  STATE.diagTried = [`eventsround r=1,2,3 + next + past + eventsday×${koDays.length}`];
+
+  const [r1, r2, r3, nx, ps, oddsData, ...dayData] = await Promise.all([
     fetchJson(`${base}eventsround.php?id=${id}&r=1&s=${CONFIG.SEASON}`),
     fetchJson(`${base}eventsround.php?id=${id}&r=2&s=${CONFIG.SEASON}`),
     fetchJson(`${base}eventsround.php?id=${id}&r=3&s=${CONFIG.SEASON}`),
     fetchJson(`${base}eventsnextleague.php?id=${id}`),
     fetchJson(`${base}eventspastleague.php?id=${id}`),
     fetchJson('odds.json'),   // realūs koeficientai (statinis failas repo, be API rakto)
+    ...koDays.map(d => fetchJson(`${base}eventsday.php?d=${d}&s=Soccer`)),
   ]);
 
   // Koeficientų žemėlapis: rūšiuotas komandų raktas -> tikimybės pagal komandą
@@ -769,8 +786,10 @@ async function loadData() {
 
   // Sujungiame be dublikatų (pagal idEvent). „next"/„past" pirma, paskui turų
   // duomenys (jie pilnesni – turi „strGroup" ir rezultatus) perrašo tą patį įvykį.
+  // Sujungimas (dedup pagal idEvent). „eventsday" (su rezultatais) perrašo
+  // „next/past", o turų duomenys – grupių rungtynes (jie pilniausi).
   const byId = new Map();
-  for (const d of [nx, ps, r1, r2, r3]) {
+  for (const d of [nx, ps, ...dayData, r1, r2, r3]) {
     for (const ev of arr(d)) if (ev && ev.idEvent && String(ev.idLeague) === id) byId.set(ev.idEvent, ev);
   }
   const events = [...byId.values()];
@@ -799,7 +818,8 @@ async function loadData() {
   const finalEvents = [...groupEvents, ...koEvents, ...koExtra];
 
   const roundCount = arr(r1).length + arr(r2).length + arr(r3).length;
-  STATE.endpointUsed = `eventsround(${roundCount}) + next(${arr(nx).length}) + past(${arr(ps).length}) + KO(${koEvents.length})`;
+  const dayCount = dayData.reduce((s, d) => s + arr(d).filter(e => String(e.idLeague) === id).length, 0);
+  STATE.endpointUsed = `eventsround(${roundCount}) + next(${arr(nx).length}) + past(${arr(ps).length}) + day(${dayCount}) + KO(${koEvents.length})`;
 
   STATE.events = finalEvents;
   STATE.groups = computeGroups(events);
