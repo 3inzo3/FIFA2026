@@ -226,6 +226,11 @@
   .winp.ph { color: var(--green); }
   .winp.pa { color: #818cf8; }
   .est { font-size: 11px; color: var(--muted); font-weight: 700; margin-right: 1px; }  /* „≈" – įvertis, ne realūs koef. */
+  /* Baudinių rezultatas „(4)" ir užrašas */
+  .score .pen { font-size: 13px; color: var(--muted); font-weight: 700; }
+  .pen-note { margin-top: 10px; font-size: 12.5px; color: var(--gold); background: rgba(229,181,103,.08); border: 1px solid rgba(229,181,103,.22); border-radius: 9px; padding: 6px 10px; }
+  .pen-note b { color: #fff; }
+  .bk-pen { font-size: 10px; color: var(--muted); font-weight: 700; }
 
   /* ---------- Tinklelis (bracket) – klasikinis horizontalus medis ---------- */
   .bracket-note { font-size: 12.5px; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; line-height: 1.5; }
@@ -343,7 +348,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v18',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v19',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -673,10 +678,35 @@ function hasScore(ev) {
   return ev.intHomeScore != null && ev.intHomeScore !== '' &&
          ev.intAwayScore != null && ev.intAwayScore !== '';
 }
+// Ar rungtynės baigtos baudiniais? (lygu po pagrindinio laiko + yra baudinių rezult.)
+// TheSportsDB baudinių rezultatą laiko intHomeScoreExtra/intAwayScoreExtra, statusas „AP".
+function wentToPens(ev) {
+  return hasScore(ev) && +ev.intHomeScore === +ev.intAwayScore &&
+         ev.intHomeScoreExtra != null && ev.intHomeScoreExtra !== '' &&
+         ev.intAwayScoreExtra != null && ev.intAwayScoreExtra !== '';
+}
+// Kuri pusė laimėjo? 'home' / 'away' / null. Po lygiųjų lemia baudiniai.
+function koWinnerSide(ev) {
+  if (!hasScore(ev)) return null;
+  const hs = +ev.intHomeScore, as = +ev.intAwayScore;
+  if (hs > as) return 'home';
+  if (as > hs) return 'away';
+  if (wentToPens(ev)) {
+    const hp = +ev.intHomeScoreExtra, ap = +ev.intAwayScoreExtra;
+    if (hp > ap) return 'home';
+    if (ap > hp) return 'away';
+  }
+  return null; // lygiosios (grupėse) arba neaišku
+}
+// Laimėtojos komandos vardas (arba null)
+function koWinnerName(ev) {
+  const s = koWinnerSide(ev);
+  return s === 'home' ? ev.strHomeTeam : s === 'away' ? ev.strAwayTeam : null;
+}
 // Rungtynių statusas: 'done' (baigta) / 'live' (vyksta) / 'upcoming' (būsima)
 function matchStatus(ev) {
   const st = (ev.strStatus || '').toUpperCase().trim();
-  const FIN = ['FT', 'AET', 'PEN', 'MATCH FINISHED', 'FINISHED', 'AOT'];
+  const FIN = ['FT', 'AET', 'AP', 'PEN', 'PENALTIES', 'MATCH FINISHED', 'FINISHED', 'AOT'];
   const LIVE = ['1H', '2H', 'HT', 'ET', 'LIVE', 'IN PLAY', 'P', 'BREAK', 'PEN.'];
   const d = kickoffDate(ev);
   const now = Date.now();
@@ -747,6 +777,12 @@ function buildKoEvent(r, api) {
     if (hs != null && hs !== '' && as != null && as !== '') {
       ev.intHomeScore = sameOrient ? hs : as;
       ev.intAwayScore = sameOrient ? as : hs;
+    }
+    // Baudinių rezultatas (taip pat teisingai sukeičiam, jei orientacija kita)
+    const hx = api.intHomeScoreExtra, ax = api.intAwayScoreExtra;
+    if (hx != null && hx !== '' && ax != null && ax !== '') {
+      ev.intHomeScoreExtra = sameOrient ? hx : ax;
+      ev.intAwayScoreExtra = sameOrient ? ax : hx;
     }
     if (api.strHomeTeamBadge) STATE.badges[normTeam(sameOrient ? r.h : r.a)] = api.strHomeTeamBadge;
     if (api.strAwayTeamBadge) STATE.badges[normTeam(sameOrient ? r.a : r.h)] = api.strAwayTeamBadge;
@@ -973,12 +1009,15 @@ function matchCard(ev, showDay = false) {
     ? `<span class="pill group">${esc(g)} grupė</span>`
     : `<span class="pill ko">${esc(ev._ko ? koRoundName(ev._ko) : koRoundByDate(ev))}</span>`;
 
-  // Rezultatas (jei baigta/vyksta) arba tuščia
+  // Rezultatas (jei baigta/vyksta) arba tuščia. Baudiniai – mažu skaičiumi „(4)".
   const showScore = (status === 'done' || status === 'live') && hasScore(ev);
-  const hs = showScore ? esc(ev.intHomeScore) : '';
-  const as = showScore ? esc(ev.intAwayScore) : '';
-  const homeWin = showScore && +ev.intHomeScore > +ev.intAwayScore;
-  const awayWin = showScore && +ev.intAwayScore > +ev.intHomeScore;
+  const pens = showScore && wentToPens(ev);
+  const penTag = (v) => pens ? ` <span class="pen">(${esc(v)})</span>` : '';
+  const hs = showScore ? esc(ev.intHomeScore) + penTag(ev.intHomeScoreExtra) : '';
+  const as = showScore ? esc(ev.intAwayScore) + penTag(ev.intAwayScoreExtra) : '';
+  const winSide = showScore ? koWinnerSide(ev) : null;
+  const homeWin = winSide === 'home';
+  const awayWin = winSide === 'away';
 
   // Laiko eilutė. Rūšiuojant pagal laiką dieną rodo antraštė (kortelėje tik laikas);
   // pagal hype (antraščių nėra) – rodom dieną. Atkrintamosioms pridedame miestą.
@@ -1014,6 +1053,11 @@ function matchCard(ev, showDay = false) {
     homeRight = ''; awayRight = '';
   }
 
+  // Baudinių užrašas (kad būtų aišku, kas perėjo po lygiųjų)
+  const penNote = pens
+    ? `<div class="pen-note">⚽ Po baudinių (${esc(ev.intHomeScoreExtra)}:${esc(ev.intAwayScoreExtra)}) — toliau keliauja <b>${esc(koWinnerName(ev))}</b></div>`
+    : '';
+
   return `<div class="match">
     <div class="top">
       <span class="meta-left">${stagePill}${statusPill}</span>
@@ -1030,6 +1074,7 @@ function matchCard(ev, showDay = false) {
       </div>
     </div>
     ${probs}
+    ${penNote}
     ${when}
   </div>`;
 }
@@ -1086,46 +1131,45 @@ function koLoser(m) {
   return m.winner === m.home ? m.away : m.home;
 }
 
-// Sudaro visą tinklelį: numeris -> { home, away, hKnown, aKnown, hs, as, status, done, winner }
+// Baudinių rezultatas konkrečiai komandai (arba null, jei nebuvo baudinių)
+function penFor(ev, teamName) {
+  if (!ev || !wentToPens(ev)) return null;
+  if (normTeam(teamName) === normTeam(ev.strHomeTeam)) return ev.intHomeScoreExtra;
+  if (normTeam(teamName) === normTeam(ev.strAwayTeam)) return ev.intAwayScoreExtra;
+  return null;
+}
+// Sudaro vieną tinklelio įrašą iš įvykio (orientacija pagal home/away vardus).
+// Grąžina: { home, away, hKnown, aKnown, hs, as, hp, ap, status, done, winner }
+function koEntry(home, away, ev, hKnown = true, aKnown = true) {
+  const st = ev ? matchStatus(ev) : 'upcoming';
+  const done = !!(ev && st === 'done' && hasScore(ev));
+  const wn = done ? koWinnerName(ev) : null;
+  const winner = wn ? (normTeam(wn) === normTeam(home) ? home : away) : null;
+  // rezultatą pateikiam home/away orientacija (vardas gali būti namų ar svečių API pusėje)
+  const sameOrient = ev ? normTeam(ev.strHomeTeam) === normTeam(home) : true;
+  const hs = ev ? (sameOrient ? ev.intHomeScore : ev.intAwayScore) : null;
+  const as = ev ? (sameOrient ? ev.intAwayScore : ev.intHomeScore) : null;
+  return {
+    home, away, hKnown, aKnown,
+    hs, as, hp: penFor(ev, home), ap: penFor(ev, away),
+    status: st, done, winner,
+  };
+}
+// Sudaro visą tinklelį: numeris -> įrašas (žr. koEntry)
 function koResolve() {
   const R = {};
-  // 1) R32 – komandos žinomos iš tinklelio; rezultatai iš (su API sulietų) įvykių
-  for (const r of KO_R32) {
-    const ev = koEventByNum(r.m);
-    const st = ev ? matchStatus(ev) : 'upcoming';
-    const done = !!(ev && st === 'done' && hasScore(ev));
-    let winner = null;
-    if (done) {
-      const a = +ev.intHomeScore, b = +ev.intAwayScore;
-      winner = a > b ? r.h : b > a ? r.a : null; // lygiosios -> 11 m, nežinom -> null
-    }
-    R[r.m] = {
-      home: r.h, away: r.a, hKnown: true, aKnown: true,
-      hs: ev ? ev.intHomeScore : null, as: ev ? ev.intAwayScore : null,
-      status: st, done, winner,
-    };
-  }
+  // 1) R32 – komandos iš tinklelio; rezultatai iš (su API sulietų) sintetinių įvykių
+  for (const r of KO_R32) R[r.m] = koEntry(r.h, r.a, koEventByNum(r.m));
   // 2) 1/8 -> Finalas: komandos = maitintojų laimėtojai; rezultatas iš API pagal porą
   for (const n of [89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 104, 103]) {
     const [f1, f2] = KO_NEXT[n];
-    const takeLoser = (n === 103);
+    const takeLoser = (n === 103); // dėl 3 vietos – pusfinalių PRALAIMĖTOJAI
     const t1 = takeLoser ? koLoser(R[f1]) : (R[f1] ? R[f1].winner : null);
     const t2 = takeLoser ? koLoser(R[f2]) : (R[f2] ? R[f2].winner : null);
-    const e = { home: t1, away: t2, hKnown: !!t1, aKnown: !!t2, hs: null, as: null, status: 'upcoming', done: false, winner: null };
-    if (t1 && t2 && STATE.koApi) {
-      const api = STATE.koApi.get(pairKey(t1, t2));
-      if (api) {
-        const same = normTeam(api.strHomeTeam) === normTeam(t1);
-        e.status = matchStatus(api);
-        if (api.intHomeScore != null && api.intHomeScore !== '' && api.intAwayScore != null) {
-          e.hs = same ? api.intHomeScore : api.intAwayScore;
-          e.as = same ? api.intAwayScore : api.intHomeScore;
-          e.done = e.status === 'done';
-          if (e.done) { const a = +e.hs, b = +e.as; e.winner = a > b ? t1 : b > a ? t2 : null; }
-        }
-      }
-    }
-    R[n] = e;
+    const api = (t1 && t2 && STATE.koApi) ? STATE.koApi.get(pairKey(t1, t2)) : null;
+    R[n] = (t1 && t2)
+      ? koEntry(t1, t2, api, true, true)
+      : { home: t1, away: t2, hKnown: !!t1, aKnown: !!t2, hs: null, as: null, hp: null, ap: null, status: 'upcoming', done: false, winner: null };
   }
   return R;
 }
@@ -1141,13 +1185,18 @@ function bkSlot(m, side, num, probH, probA) {
   const known = side === 'home' ? m.hKnown : m.aKnown;
   const name = side === 'home' ? m.home : m.away;
   const score = side === 'home' ? m.hs : m.as;
+  const pen = side === 'home' ? m.hp : m.ap;   // baudinių rezultatas (jei buvo)
   const isWin = m.done && m.winner && m.winner === name;
   const isLoseDone = m.done && m.winner && m.winner !== name;
   const flag = known ? flagEmoji(name) : '';
   const label = known ? esc(name) : '—';
   let right = '';
-  if (score != null && score !== '') right = `<span class="bk-sc">${esc(score)}</span>`;
-  else if (!m.done && known) { const p = side === 'home' ? probH : probA; if (p != null) right = `<span class="bk-pct">${p}%</span>`; }
+  if (score != null && score !== '') {
+    const penTxt = (pen != null && pen !== '') ? ` <span class="bk-pen">(${esc(pen)})</span>` : '';
+    right = `<span class="bk-sc">${esc(score)}${penTxt}</span>`;
+  } else if (!m.done && known) {
+    const p = side === 'home' ? probH : probA; if (p != null) right = `<span class="bk-pct">${p}%</span>`;
+  }
   return `<div class="bk-slot ${isWin ? 'win' : ''} ${isLoseDone ? 'lose' : ''} ${known ? '' : 'tbd'}">
     <span class="flag">${flag}</span><span class="bk-nm">${label}</span>${right}</div>`;
 }
