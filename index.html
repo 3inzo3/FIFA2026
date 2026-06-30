@@ -337,8 +337,8 @@
     <!-- 2) LENTELĖS -->
     <section class="tab-panel" id="tab-tables">
       <div class="legend">
-        <span><span class="dot g"></span>1–2 vieta — kyla į atkrintamąsias</span>
-        <span><span class="dot y"></span>3 vieta — galimai kyla</span>
+        <span><span class="dot g"></span>1–2 vietos — kyla į atkrintamąsias</span>
+        <span><span class="dot y"></span>3-ia vieta — galimai kyla</span>
       </div>
       <div id="tablesList"></div>
     </section>
@@ -374,7 +374,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v20',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v21',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -544,16 +544,16 @@ const KO_ROUND_START = { 32: '2026-06-28', 16: '2026-07-04', 8: '2026-07-09', 4:
 
 // Tinklelio stulpeliai. „nums" – iš viršaus į apačią, kad gretimos poros jungtųsi.
 const BRACKET_COLS = [
-  { key: 'R32', title: '1/16 finalio',  sub: 'birž. 28 – liep. 4', nums: [74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87] },
-  { key: 'R16', title: '1/8 finalio',   sub: 'liepos 4–7',         nums: [89, 90, 93, 94, 91, 92, 95, 96] },
-  { key: 'QF',  title: 'Ketvirtfinaliai', sub: 'liepos 9–11',      nums: [97, 98, 99, 100] },
-  { key: 'SF',  title: 'Pusfinaliai',   sub: 'liepos 14–15',       nums: [101, 102] },
-  { key: 'F',   title: 'Finalas',       sub: 'liepos 19',          nums: [104] },
+  { key: 'R32', title: '1/16 finalo',    sub: 'birž. 28 – liep. 4', nums: [74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87] },
+  { key: 'R16', title: 'Aštuntfinaliai', sub: 'liepos 4–7',         nums: [89, 90, 93, 94, 91, 92, 95, 96] },
+  { key: 'QF',  title: 'Ketvirtfinaliai', sub: 'liepos 9–11',       nums: [97, 98, 99, 100] },
+  { key: 'SF',  title: 'Pusfinaliai',    sub: 'liepos 14–15',       nums: [101, 102] },
+  { key: 'F',   title: 'Finalas',        sub: 'liepos 19',          nums: [104] },
 ];
 // Etapo pavadinimas pagal rungtynių numerį (kortelės ženkliukui)
 function koRoundName(m) {
-  if (m >= 73 && m <= 88) return '1/16 finalio';
-  if (m >= 89 && m <= 96) return '1/8 finalio';
+  if (m >= 73 && m <= 88) return '1/16 finalo';
+  if (m >= 89 && m <= 96) return 'Aštuntfinalis';
   if (m >= 97 && m <= 100) return 'Ketvirtfinalis';
   if (m === 101 || m === 102) return 'Pusfinalis';
   if (m === 103) return 'Dėl 3 vietos';
@@ -561,12 +561,12 @@ function koRoundName(m) {
   return 'Atkrintamosios';
 }
 // Etapo pavadinimas pagal datą — atkrintamosioms, kurios atėjo tiesiai iš API
-// (be mūsų numerio). Šios visada yra 1/8 ar vėliau (R32 turi savo numerius).
+// (be mūsų numerio). Šios visada yra aštuntfinalis ar vėliau (R32 turi savo numerius).
 function koRoundByDate(ev) {
   const d = kickoffDate(ev);
   if (!d) return 'Atkrintamosios';
   const k = vilniusKey(d);
-  if (k <= '2026-07-07') return '1/8 finalio';
+  if (k <= '2026-07-07') return 'Aštuntfinalis';
   if (k <= '2026-07-11') return 'Ketvirtfinalis';
   if (k <= '2026-07-15') return 'Pusfinalis';
   if (k <= '2026-07-18') return 'Dėl 3 vietos';
@@ -1014,7 +1014,7 @@ function heroCard(ev) {
     ? `<div class="hero-mid"><span class="hero-p ph">${od.est ? '≈' : ''}${od.ph}%</span><span class="hero-x">:</span><span class="hero-p pa">${od.pa}%</span></div>`
     : `<div class="hero-mid"><span class="hero-vs">VS</span></div>`;
   return `<div class="hero">
-    <div class="hero-top"><span class="hero-label">⚡ Kita rungtynė · ${stage}</span><span class="hype ${hypeClass(hype)}">🔥 ${hype}</span></div>
+    <div class="hero-top"><span class="hero-label">⚡ Artimiausios rungtynės · ${stage}</span><span class="hype ${hypeClass(hype)}">🔥 ${hype}</span></div>
     <div class="hero-body">
       <div class="hero-team"><span class="hero-flag">${flagEmoji(ev.strHomeTeam)}</span><span class="hero-nm">${esc(ev.strHomeTeam)}</span></div>
       ${mid}
@@ -1123,7 +1123,7 @@ function matchCard(ev, showDay = false) {
     awayRight = `<span class="winp pa">${od.pa}%</span>`;
     probs = `<div class="probs">
       <div class="pbar two"><i class="ph" style="width:${od.ph}%"></i><i class="pa" style="width:${od.pa}%"></i></div>
-      <div class="xdraw">${od.est ? 'Įvertis pagal reitingus' : 'Tikimybė pereiti toliau'}</div>
+      <div class="xdraw">${od.est ? 'Įvertis pagal reitingus' : 'Tikimybė žengti toliau'}</div>
     </div>`;
   } else if (od) {
     homeRight = `<span class="winp ph">${od.ph}%</span>`;
@@ -1138,7 +1138,7 @@ function matchCard(ev, showDay = false) {
 
   // Baudinių užrašas (kad būtų aišku, kas perėjo po lygiųjų)
   const penNote = pens
-    ? `<div class="pen-note">⚽ Po baudinių (${esc(ev.intHomeScoreExtra)}:${esc(ev.intAwayScoreExtra)}) — toliau keliauja <b>${esc(koWinnerName(ev))}</b></div>`
+    ? `<div class="pen-note">⚽ Po baudinių (${esc(ev.intHomeScoreExtra)}:${esc(ev.intAwayScoreExtra)}) toliau žengia <b>${esc(koWinnerName(ev))}</b></div>`
     : '';
 
   return `<div class="match">
@@ -1297,8 +1297,8 @@ function bkTie(m, num, style) {
 function renderBracket() {
   const R = koResolve();
   el('bracketNote').innerHTML =
-    '<b>Atkrintamosios.</b> R32 poros aiškios — grupių etapas baigtas. Vėlesni etapai užsipildo automatiškai, kai sužaidžiamos rungtynės. ' +
-    'Procentai — tikimybė pereiti toliau (realūs koeficientai; „≈" — įvertis). Slinkite į šoną ir žemyn →';
+    '<b>Atkrintamosios.</b> 1/16 finalo poros aiškios — grupių etapas baigtas. Vėlesni etapai užsipildo automatiškai, kai sužaidžiamos rungtynės. ' +
+    'Procentai — tikimybė žengti toliau (realūs koeficientai; „≈" — įvertis). Slinkite į šoną ir žemyn →';
 
   // Geometrija
   const TIE_H = 58, ROW_GAP = 16, COL_W = 166, COL_GAP = 34, HEAD_H = 42;
@@ -1347,11 +1347,11 @@ function renderBracket() {
 // 10.35 REITINGAI (FIFA reitingai + HYPE paaiškinimas)
 function renderRankings() {
   el('hypeInfo').innerHTML = `<b>Kaip skaičiuojamas HYPE 🔥 (1–100)?</b><br>
-    Bazė: kuo aukštesni ABIEJŲ komandų FIFA reitingai, tuo daugiau taškų.
+    Bazė: kuo stipresnės ABI komandos (pagal FIFA reitingą), tuo daugiau taškų.
     Pridedama <b>+</b> už „didžiąsias" komandas (Argentina, Prancūzija, Brazilija, Anglija,
-    Ispanija, Portugalija, Vokietija, Nyderlandai) ir <b>+</b> už atkrintamąsias arba
-    lemiamą (3‑čią) grupės turą. Spalva: žalia (ramios) → geltona → raudona (karštos).
-    <br><br><b>FIFA reitingai</b> (apytiksliai, 2026‑06) — pagal juos skaičiuojamas hype:`;
+    Ispanija, Portugalija, Vokietija, Nyderlandai) ir <b>+</b> už atkrintamųjų arba
+    lemiamo (3‑io) grupės turo rungtynes. Spalva: žalia (rami) → geltona → raudona (karšta).
+    <br><br><b>FIFA reitingai</b> (2026‑06) — pagal juos skaičiuojamas HYPE:`;
 
   // Visi 48 dalyviai, surūšiuoti pagal reitingą
   const teams = [];
