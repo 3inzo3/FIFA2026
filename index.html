@@ -343,7 +343,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v16',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v17',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -719,6 +719,23 @@ async function fetchJson(url) {
   }
 }
 
+// Siunčia kelias užklausas, bet ne daugiau „limit" VIENU METU (su mažu tarpeliu).
+// Nemokamas raktas „123" riboja lygiagrečias užklausas — per daug jų iškart
+// (pvz. 8) „nulauždavo" net eventsround. Todėl siunčiam po nedaug ir iš eilės.
+async function fetchAllLimited(urls, limit = 3, gapMs = 120) {
+  const out = new Array(urls.length);
+  let next = 0;
+  async function worker() {
+    while (next < urls.length) {
+      const i = next++;
+      out[i] = await fetchJson(urls[i]);
+      if (gapMs) await new Promise(r => setTimeout(r, gapMs));
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, urls.length) }, worker));
+  return out;
+}
+
 // Iš tinklelio aprašo (KO_R32) padaro „įvykio" objektą, suderinamą su likusiu
 // kodu. Jei API jau turi tas rungtynes (pagal komandų porą) – paima realų
 // laiką, statusą ir rezultatą (teisingai sukeičia namus/svečius, jei reikia).
@@ -762,18 +779,24 @@ async function loadData() {
   // dienoms (būsimoms rezultatų dar nėra) — taip nešvaistom užklausų ir apeiname
   // „past/next league" ribojimą (grąžina po 1).
   const today = todayKey();
-  const koDays = KO_DAYS.filter(d => d <= today);
-  STATE.diagTried = [`eventsround r=1,2,3 + next + past + eventsday×${koDays.length}`];
+  // Atkrintamųjų dienos su rezultatais: tik praėjusios/šios (būsimų dar nėra).
+  // Naujausios pirma — jei API ribotų, svarbiausi (paskutiniai) rezultatai ateis pirma.
+  const koDays = KO_DAYS.filter(d => d <= today).reverse();
+  STATE.diagTried = [`eventsround r=1,2,3 + eventsday×${koDays.length} (po 3 vienu metu)`];
 
-  const [r1, r2, r3, nx, ps, oddsData, ...dayData] = await Promise.all([
-    fetchJson(`${base}eventsround.php?id=${id}&r=1&s=${CONFIG.SEASON}`),
-    fetchJson(`${base}eventsround.php?id=${id}&r=2&s=${CONFIG.SEASON}`),
-    fetchJson(`${base}eventsround.php?id=${id}&r=3&s=${CONFIG.SEASON}`),
-    fetchJson(`${base}eventsnextleague.php?id=${id}`),
-    fetchJson(`${base}eventspastleague.php?id=${id}`),
-    fetchJson('odds.json'),   // realūs koeficientai (statinis failas repo, be API rakto)
-    ...koDays.map(d => fetchJson(`${base}eventsday.php?d=${d}&s=Soccer`)),
+  // Eilės tvarka SVARBI: pirma grupių turai (svarbiausi — lentelės/rezultatai),
+  // tada atkrintamųjų dienos. Siunčiam ne daugiau 3 vienu metu (žr. fetchAllLimited).
+  const apiUrls = [
+    `${base}eventsround.php?id=${id}&r=1&s=${CONFIG.SEASON}`,
+    `${base}eventsround.php?id=${id}&r=2&s=${CONFIG.SEASON}`,
+    `${base}eventsround.php?id=${id}&r=3&s=${CONFIG.SEASON}`,
+    ...koDays.map(d => `${base}eventsday.php?d=${d}&s=Soccer`),
+  ];
+  const [oddsData, apiResults] = await Promise.all([
+    fetchJson('odds.json'),              // vietinis failas (ne API — neribojamas)
+    fetchAllLimited(apiUrls, 3, 120),
   ]);
+  const [r1, r2, r3, ...dayData] = apiResults;
 
   // Koeficientų žemėlapis: rūšiuotas komandų raktas -> tikimybės pagal komandą
   STATE.odds = {};
@@ -789,7 +812,7 @@ async function loadData() {
   // Sujungimas (dedup pagal idEvent). „eventsday" (su rezultatais) perrašo
   // „next/past", o turų duomenys – grupių rungtynes (jie pilniausi).
   const byId = new Map();
-  for (const d of [nx, ps, ...dayData, r1, r2, r3]) {
+  for (const d of [...dayData, r1, r2, r3]) {
     for (const ev of arr(d)) if (ev && ev.idEvent && String(ev.idLeague) === id) byId.set(ev.idEvent, ev);
   }
   const events = [...byId.values()];
@@ -819,7 +842,7 @@ async function loadData() {
 
   const roundCount = arr(r1).length + arr(r2).length + arr(r3).length;
   const dayCount = dayData.reduce((s, d) => s + arr(d).filter(e => String(e.idLeague) === id).length, 0);
-  STATE.endpointUsed = `eventsround(${roundCount}) + next(${arr(nx).length}) + past(${arr(ps).length}) + day(${dayCount}) + KO(${koEvents.length})`;
+  STATE.endpointUsed = `eventsround(${roundCount}) + day(${dayCount}/${koDays.length}) + KO(${koEvents.length})`;
 
   STATE.events = finalEvents;
   STATE.groups = computeGroups(events);
