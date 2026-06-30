@@ -9,7 +9,8 @@ Atidaryk `index.html` naršyklėje (telefone ar kompiuteryje). Duomenys
 įsikrauna automatiškai. Spausk **„Atnaujinti"**, kad gautum naujausius rezultatus.
 
 ## Skiltys
-- **Rungtynės** — būsimos ir pasibaigusios. Laikas **Lietuvos laiku (LT)**,
+- **Rungtynės** — viršuje **„Kita rungtynė"** kortelė su atgaliniu laikrodžiu.
+  Žemiau — būsimos ir pasibaigusios. Laikas **Lietuvos laiku (LT)**,
   grupė arba atkrintamųjų etapas (1/16, 1/8, …), miestas, statusas ir **HYPE 🔥**.
   Galima rūšiuoti pagal laiką arba pagal hype. Būsimoms rodoma laimėjimo
   tikimybė: grupėse 3-krypčių (1/X/2), atkrintamosiose 2-krypčių

@@ -49,7 +49,9 @@
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
-  .wrap { max-width: 640px; margin: 0 auto; padding: 16px 14px 40px; }
+  /* Subtilus auksinis švytėjimas viršuje – gylio pojūtis */
+  body::before { content: ""; position: fixed; left: 0; right: 0; top: 0; height: 440px; pointer-events: none; z-index: 0; background: radial-gradient(120% 100% at 50% -45%, rgba(229,181,103,.09), transparent 62%); }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 16px 14px 40px; position: relative; z-index: 1; }
 
   /* ---------- Antraštė ---------- */
   header { margin-bottom: 14px; }
@@ -58,7 +60,8 @@
     display: flex; align-items: center; gap: 10px;
   }
   .title .ball { font-size: 20px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: var(--card); border: 1px solid var(--line); border-radius: 11px; }
-  .title .accent { color: var(--gold); }
+  /* Auksinė gradientinė antraštė – „prabangesnis" akcentas */
+  .title .accent { color: var(--gold); background: linear-gradient(135deg, #F4D58A 0%, #E5B567 45%, #CF9A41 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
   .subrow {
     margin-top: 6px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -129,10 +132,33 @@
   }
   .day-head:first-child { margin-top: 0; }
 
+  /* ---------- „Kita rungtynė" herojaus kortelė ---------- */
+  .hero {
+    position: relative; border-radius: 18px; padding: 14px 16px 13px; margin-bottom: 16px;
+    background: linear-gradient(160deg, #212c3a 0%, #151d26 100%);
+    border: 1px solid rgba(229,181,103,.35);
+    box-shadow: 0 14px 34px -18px rgba(0,0,0,.9), 0 0 42px -26px rgba(229,181,103,.5);
+  }
+  .hero-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .hero-label { font-size: 11px; font-weight: 800; letter-spacing: .6px; color: var(--gold); text-transform: uppercase; }
+  .hero-body { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .hero-team { display: flex; flex-direction: column; align-items: center; gap: 7px; flex: 1; min-width: 0; }
+  .hero-flag { font-size: 36px; line-height: 1; }
+  .hero-nm { font-size: 14.5px; font-weight: 700; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hero-mid { flex: none; display: flex; align-items: baseline; gap: 5px; padding: 0 4px; }
+  .hero-p { font-size: 19px; font-weight: 800; }
+  .hero-p.ph { color: var(--green); } .hero-p.pa { color: #818cf8; }
+  .hero-x { color: var(--muted); font-weight: 800; }
+  .hero-vs { font-size: 18px; font-weight: 800; color: var(--muted); letter-spacing: 1px; }
+  .hero-meta { margin-top: 13px; font-size: 12.5px; color: var(--muted); display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+  .hero-count { margin-left: auto; font-weight: 800; color: #fff; background: rgba(229,181,103,.15); border: 1px solid rgba(229,181,103,.32); border-radius: 999px; padding: 3px 11px; font-variant-numeric: tabular-nums; }
+
   /* ---------- Rungtynių kortelė ---------- */
   .match {
-    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    background: linear-gradient(170deg, #1d2832 0%, #161e27 100%);
+    border: 1px solid var(--line); border-radius: var(--radius);
     padding: 12px 14px; margin-bottom: 10px;
+    box-shadow: 0 8px 20px -16px rgba(0,0,0,.8);
   }
   .match .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
   .meta-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -166,7 +192,7 @@
   .match .when .t { color: var(--text); font-weight: 700; }
 
   /* ---------- Lentelės (grupės) ---------- */
-  .group-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 4px 8px; margin-bottom: 14px; overflow: hidden; }
+  .group-card { background: linear-gradient(170deg, #1d2832 0%, #161e27 100%); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 4px 8px; margin-bottom: 14px; overflow: hidden; box-shadow: 0 8px 20px -16px rgba(0,0,0,.8); }
   .group-title { font-size: 15px; font-weight: 800; padding: 8px 12px 4px; }
   .group-title .accent { color: var(--gold); }
   /* table-layout: fixed + colgroup — kad stulpeliai būtų vienodi ir nieko neišmuštų */
@@ -240,7 +266,7 @@
   .bk-head { position: absolute; top: 0; text-align: center; font-size: 12px; font-weight: 800; color: var(--gold); text-transform: uppercase; letter-spacing: .4px; }
   .bk-head span { display: block; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: none; letter-spacing: 0; margin-top: 2px; }
   .bk-line { position: absolute; background: var(--line); }
-  .bk-tie { position: absolute; background: var(--card); border: 1px solid var(--line); border-radius: 9px; overflow: hidden; display: flex; flex-direction: column; }
+  .bk-tie { position: absolute; background: linear-gradient(170deg, #1d2832 0%, #161e27 100%); border: 1px solid var(--line); border-radius: 9px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 6px 16px -14px rgba(0,0,0,.8); }
   .bk-slot { display: flex; align-items: center; gap: 6px; padding: 0 8px; height: 50%; font-size: 12.5px; min-width: 0; }
   .bk-slot + .bk-slot { border-top: 1px solid var(--line); }
   .bk-slot .flag { font-size: 14px; width: 17px; text-align: center; flex: none; }
@@ -348,7 +374,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v19',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v20',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -512,6 +538,10 @@ const KO_NEXT = {
   104: [101, 102], // Finalas
   103: [101, 102], // Dėl 3 vietos (pralaimėtojai)
 };
+// Kada (UTC data) prasideda kiekvienas atkrintamųjų turas — kad netrauktume
+// tuščių užklausų, kol turas dar neprasidėjęs (taupom nemokamo rakto limitą).
+const KO_ROUND_START = { 32: '2026-06-28', 16: '2026-07-04', 8: '2026-07-09', 4: '2026-07-14' };
+
 // Tinklelio stulpeliai. „nums" – iš viršaus į apačią, kad gretimos poros jungtųsi.
 const BRACKET_COLS = [
   { key: 'R32', title: '1/16 finalio',  sub: 'birž. 28 – liep. 4', nums: [74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87] },
@@ -802,11 +832,14 @@ async function loadData() {
   const arr = d => (d && Array.isArray(d.events)) ? d.events : [];
 
   // VISKĄ imame per „eventsround" — nemokamame rakte jis NERIBOJAMAS (skirtingai nei
-  // eventsseason/past/next, kurie grąžina po ~1). Grupės: r=1,2,3. Atkrintamąsias
-  // TheSportsDB žymi PAGAL KOMANDŲ SKAIČIŲ etape: 1/16=32, 1/8=16, ketvirtf.=8,
-  // pusf.=4, finalas=2. (Finalas „pataiko" į tą patį r=2 kaip grupių 2-as turas —
-  // nesvarbu: grupes nuo atkrintamųjų atskiria groupOf pagal komandas, ne pagal numerį.)
-  const rounds = [1, 2, 3, 4, 8, 16, 32];
+  // eventsseason/past/next). Grupės: r=1,2,3. Atkrintamąsias TheSportsDB žymi PAGAL
+  // KOMANDŲ SKAIČIŲ etape: 1/16=32, 1/8=16, ketvirtf.=8, pusf.=4, finalas=2.
+  // SVARBU: traukiam TIK tuos atkrintamųjų turus, kurie JAU prasidėję (pagal datą) —
+  // kitaip be reikalo siunčiam tuščias užklausas ir nemokamas raktas pradeda mesti
+  // grupių duomenis (lentelės tampa nulinės). Finalas (r=2) jau yra tarp grupių turų.
+  const today = todayKey();
+  const koActive = [32, 16, 8, 4].filter(r => today >= KO_ROUND_START[r]);
+  const rounds = [1, 2, 3, ...koActive];
   STATE.diagTried = [`eventsround r=${rounds.join(',')} (po 3 vienu metu)`];
 
   const apiUrls = rounds.map(r => `${base}eventsround.php?id=${id}&r=${r}&s=${CONFIG.SEASON}`);
@@ -949,10 +982,52 @@ function renderStatus() {
   }
 }
 
+// --- „Kita rungtynė" herojaus kortelė su atgaliniu laikrodžiu ---
+function fmtCountdown(ms) {
+  if (ms <= 0) return 'jau prasideda!';
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+  if (d > 0) return `po ${d} d. ${h} val.`;
+  return `po ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+}
+let heroTimer = null;
+function stopHeroTimer() { if (heroTimer) { clearInterval(heroTimer); heroTimer = null; } }
+function startHeroTimer(targetMs) {
+  stopHeroTimer();
+  const tick = () => {
+    const c = el('heroCount');
+    if (!c) { stopHeroTimer(); return; }          // kortelė dingo – stabdom
+    c.textContent = fmtCountdown(targetMs - Date.now());
+  };
+  tick();
+  heroTimer = setInterval(tick, 1000);
+}
+// Artimiausios (dar neprasidėjusios) rungtynės kortelė
+function heroCard(ev) {
+  const d = kickoffDate(ev);
+  const g = groupOf(ev);
+  const stage = g ? `${esc(g)} grupė` : (ev._ko ? esc(koRoundName(ev._ko)) : 'Atkrintamosios');
+  const hype = computeHype(ev);
+  const od = winProbs(ev);
+  const cityTxt = ev._city ? ` · 📍 ${esc(ev._city)}` : '';
+  const mid = od
+    ? `<div class="hero-mid"><span class="hero-p ph">${od.est ? '≈' : ''}${od.ph}%</span><span class="hero-x">:</span><span class="hero-p pa">${od.pa}%</span></div>`
+    : `<div class="hero-mid"><span class="hero-vs">VS</span></div>`;
+  return `<div class="hero">
+    <div class="hero-top"><span class="hero-label">⚡ Kita rungtynė · ${stage}</span><span class="hype ${hypeClass(hype)}">🔥 ${hype}</span></div>
+    <div class="hero-body">
+      <div class="hero-team"><span class="hero-flag">${flagEmoji(ev.strHomeTeam)}</span><span class="hero-nm">${esc(ev.strHomeTeam)}</span></div>
+      ${mid}
+      <div class="hero-team"><span class="hero-flag">${flagEmoji(ev.strAwayTeam)}</span><span class="hero-nm">${esc(ev.strAwayTeam)}</span></div>
+    </div>
+    <div class="hero-meta">🕒 ${esc(dayLabel(vilniusKey(d), d))} · ${esc(vilniusTime(d))} (LT)${cityTxt}<span class="hero-count" id="heroCount">${esc(fmtCountdown(d.getTime() - Date.now()))}</span></div>
+  </div>`;
+}
+
 // 10.1 RUNGTYNĖS
 function renderMatches() {
   const wrap = el('matchesList');
-  if (STATE.loading || STATE.error) { wrap.innerHTML = ''; return; }
+  if (STATE.loading || STATE.error) { stopHeroTimer(); wrap.innerHTML = ''; return; }
 
   // Tik tikros (ne TBD) rungtynės su žinomu laiku
   let list = STATE.events.filter(ev =>
@@ -965,32 +1040,40 @@ function renderMatches() {
     return finished ? st === 'done' : (st === 'upcoming' || st === 'live');
   });
 
-  if (!list.length) {
+  // „Kita rungtynė" – herojaus kortelė (tik Būsimose): artimiausia dar neprasidėjusi
+  let heroHtml = '', heroEv = null;
+  if (!finished) {
+    heroEv = list.filter(ev => matchStatus(ev) === 'upcoming')
+      .sort((a, b) => kickoffDate(a) - kickoffDate(b))[0] || null;
+    if (heroEv) { heroHtml = heroCard(heroEv); list = list.filter(ev => ev !== heroEv); }
+  }
+
+  if (!list.length && !heroHtml) {
+    stopHeroTimer();
     wrap.innerHTML = `<div class="empty">${finished
       ? 'Baigtų rungtynių dar nėra.'
       : 'Artimiausių rungtynių nerasta.'}<br>Spausk „Atnaujinti" arba bandyk vėliau.</div>`;
     return;
   }
 
+  let body = '';
   if (STATE.sortMode === 'hype') {
     // Pagal hype (didžiausias viršuje), be dienų grupavimo
     list.sort((a, b) => computeHype(b) - computeHype(a));
-    wrap.innerHTML = list.map(ev => matchCard(ev, true)).join('');
+    body = list.map(ev => matchCard(ev, true)).join('');
   } else {
     // Pagal laiką: būsimos – didėjančia, pasibaigusios – mažėjančia (naujausios viršuje)
     list.sort((a, b) => finished ? kickoffDate(b) - kickoffDate(a) : kickoffDate(a) - kickoffDate(b));
-    let html = '', lastDay = null;
+    let lastDay = null;
     for (const ev of list) {
       const d = kickoffDate(ev);
       const key = vilniusKey(d);
-      if (key !== lastDay) {
-        html += `<div class="day-head">${esc(dayLabel(key, d))}</div>`;
-        lastDay = key;
-      }
-      html += matchCard(ev);
+      if (key !== lastDay) { body += `<div class="day-head">${esc(dayLabel(key, d))}</div>`; lastDay = key; }
+      body += matchCard(ev);
     }
-    wrap.innerHTML = html;
   }
+  wrap.innerHTML = heroHtml + body;
+  if (heroEv) startHeroTimer(kickoffDate(heroEv).getTime()); else stopHeroTimer();
 }
 
 // Vienos rungtynių kortelės HTML
