@@ -374,7 +374,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v21',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v22',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -743,12 +743,13 @@ function matchStatus(ev) {
 
   if (FIN.includes(st)) return 'done';
   if (LIVE.includes(st)) return 'live';
-  // Atsarginė logika pagal laiką + rezultatą (jei strStatus neaiškus)
+  // Nėra aiškaus statuso (dažniausiai – tinklelio įvykis be API rezultato): sprendžiam
+  // pagal laiką. SVARBU: praeitis BE rezultato NĖRA „būsima" – laikom, kad jau baigta.
   if (d) {
     const start = d.getTime();
-    if (hasScore(ev) && now > start + 3 * 3600000) return 'done';
-    if (now >= start && now <= start + 3 * 3600000) return 'live';
-    if (now > start + 3 * 3600000 && hasScore(ev)) return 'done';
+    if (now < start) return 'upcoming';                 // dar neprasidėjo
+    if (now <= start + 2.5 * 3600000) return 'live';    // per ~2,5 val. – greičiausiai vyksta
+    return 'done';                                      // seniai prasidėjo – laikom baigta
   }
   if (hasScore(ev)) return 'done';
   return 'upcoming';
@@ -775,15 +776,38 @@ async function fetchJson(url) {
 async function fetchAllLimited(urls, limit = 3, gapMs = 120) {
   const out = new Array(urls.length);
   let next = 0;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
   async function worker() {
     while (next < urls.length) {
       const i = next++;
-      out[i] = await fetchJson(urls[i]);
-      if (gapMs) await new Promise(r => setTimeout(r, gapMs));
+      let r = await fetchJson(urls[i]);
+      if (r == null) { await sleep(500); r = await fetchJson(urls[i]); } // 1 pakartojimas (rate-limit?)
+      out[i] = r;
+      if (gapMs) await sleep(gapMs);
     }
   }
   await Promise.all(Array.from({ length: Math.min(limit, urls.length) }, worker));
   return out;
+}
+
+// Paskutinių sėkmingų API įvykių įsiminimas (localStorage) — kad programėlė
+// veiktų ir API'ui trumpam nutrūkus (rodytų paskutinius rezultatus, ne tuščią tvarkaraštį).
+const CACHE_KEY = 'mzn_wc_cache_v1';
+function saveCache(events) {
+  try {
+    // numetam sunkius/nereikalingus laukus (aprašymus, media), kad tilptų
+    const slim = events.map(e => {
+      const { strDescriptionEN, strVideo, strThumb, strBanner, strPoster, strMap, strFanart, strSquare, ...rest } = e;
+      return rest;
+    });
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), events: slim }));
+  } catch (e) { /* localStorage gali būti neprieinamas – nieko tokio */ }
+}
+function loadCache() {
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    return (c && Array.isArray(c.events) && c.events.length) ? c : null;
+  } catch (e) { return null; }
 }
 
 // Iš tinklelio aprašo (KO_R32) padaro „įvykio" objektą, suderinamą su likusiu
@@ -862,7 +886,11 @@ async function loadData() {
   for (const d of apiResults) {
     for (const ev of arr(d)) if (ev && ev.idEvent && String(ev.idLeague) === id) byId.set(ev.idEvent, ev);
   }
-  const events = [...byId.values()];
+  const apiEvents = [...byId.values()];
+  // Sėkmė – įsimenam paskutinius; nesėkmė – rodom paskutinius įsimintus (ne tuščią tvarkaraštį).
+  let events = apiEvents, staleAt = null;
+  if (apiEvents.length) saveCache(apiEvents);
+  else { const c = loadCache(); if (c) { events = c.events; staleAt = c.t; } }
 
   // Komandų herbai (logo) iš įvykių – naudosime juos vietoj vėliavų emoji
   STATE.badges = {};
@@ -896,12 +924,13 @@ async function loadData() {
   STATE.season = CONFIG.SEASON;
   STATE.error = null;
   if (!events.length) {
-    // API nieko negrąžino — bent jau rodome atkrintamųjų tvarkaraštį iš tinklelio.
-    STATE.notice = 'Gyvi duomenys (rezultatai ir lentelės) kol kas nepasiekiami — rodomas atkrintamųjų tvarkaraštis. Spausk „Atnaujinti".';
-    console.warn('⚠️ API be duomenų — rodomas tik KO tvarkaraštis.');
-  } else {
-    console.log(`✅ ${finalEvents.length} įvykiai · ${STATE.endpointUsed}`);
+    // Nei API, nei atmintis — bent jau rodome atkrintamųjų tvarkaraštį iš tinklelio.
+    STATE.notice = 'Gyvi duomenys kol kas nepasiekiami — rodomas atkrintamųjų tvarkaraštis. Spausk „Atnaujinti".';
+  } else if (staleAt) {
+    // API neatsakė, bet turime įsimintus duomenis — parodom juos su žyme.
+    STATE.notice = `Rodomi paskutiniai įsiminti duomenys (${vilniusTime(new Date(staleAt))}). API laikinai neatsakė — spausk „Atnaujinti".`;
   }
+  console.log(`${events.length} įvykiai · ${STATE.endpointUsed}${staleAt ? ' · iš atminties' : ''}`);
 
   STATE.loading = false; setRefreshing(false); renderAll();
 }
