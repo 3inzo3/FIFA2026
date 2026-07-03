@@ -374,7 +374,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v22',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v23',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -538,9 +538,15 @@ const KO_NEXT = {
   104: [101, 102], // Finalas
   103: [101, 102], // Dėl 3 vietos (pralaimėtojai)
 };
-// Kada (UTC data) prasideda kiekvienas atkrintamųjų turas — kad netrauktume
-// tuščių užklausų, kol turas dar neprasidėjęs (taupom nemokamo rakto limitą).
-const KO_ROUND_START = { 32: '2026-06-28', 16: '2026-07-04', 8: '2026-07-09', 4: '2026-07-14' };
+// Nuo kada TRAUKTI kiekvieno atkrintamųjų turo duomenis. Turai prasideda
+// 06-28 / 07-04 / 07-09 / 07-14, bet traukiame po kelias dienas ANKSČIAU —
+// kad būsimo turo tvarkaraštis (poros, laikai) matytųsi iš anksto, vos tik
+// paaiškėja komandos. Dar neprasidėjusių turų netraukiame (taupom raktą).
+const KO_ROUND_FETCH_FROM = { 32: '2026-06-25', 16: '2026-07-01', 8: '2026-07-06', 4: '2026-07-11' };
+// Kuriuos turus traukti šiandien (grupės visada; atkrintamieji – pagal datą)
+function koFetchRounds(today) {
+  return [1, 2, 3, ...[32, 16, 8, 4].filter(r => today >= KO_ROUND_FETCH_FROM[r])];
+}
 
 // Tinklelio stulpeliai. „nums" – iš viršaus į apačią, kad gretimos poros jungtųsi.
 const BRACKET_COLS = [
@@ -550,6 +556,13 @@ const BRACKET_COLS = [
   { key: 'SF',  title: 'Pusfinaliai',    sub: 'liepos 14–15',       nums: [101, 102] },
   { key: 'F',   title: 'Finalas',        sub: 'liepos 19',          nums: [104] },
 ];
+// Miestas rodymui: mūsų tinklelio (_city) arba iš API (strCity, be „, TX" dalies)
+function eventCity(ev) {
+  if (ev._city) return ev._city;
+  if (ev.strCity) return String(ev.strCity).split(',')[0].trim();
+  return '';
+}
+
 // Etapo pavadinimas pagal rungtynių numerį (kortelės ženkliukui)
 function koRoundName(m) {
   if (m >= 73 && m <= 88) return '1/16 finalo';
@@ -858,12 +871,10 @@ async function loadData() {
   // VISKĄ imame per „eventsround" — nemokamame rakte jis NERIBOJAMAS (skirtingai nei
   // eventsseason/past/next). Grupės: r=1,2,3. Atkrintamąsias TheSportsDB žymi PAGAL
   // KOMANDŲ SKAIČIŲ etape: 1/16=32, 1/8=16, ketvirtf.=8, pusf.=4, finalas=2.
-  // SVARBU: traukiam TIK tuos atkrintamųjų turus, kurie JAU prasidėję (pagal datą) —
-  // kitaip be reikalo siunčiam tuščias užklausas ir nemokamas raktas pradeda mesti
-  // grupių duomenis (lentelės tampa nulinės). Finalas (r=2) jau yra tarp grupių turų.
-  const today = todayKey();
-  const koActive = [32, 16, 8, 4].filter(r => today >= KO_ROUND_START[r]);
-  const rounds = [1, 2, 3, ...koActive];
+  // Turus traukiame pagal kalendorių (žr. KO_ROUND_FETCH_FROM) — būsimą turą
+  // pradedam traukti keliomis dienomis anksčiau, tolimų dar nesiunčiam (taupom
+  // raktą, kad „nenumestų" grupių duomenų). Finalas (r=2) jau yra tarp grupių turų.
+  const rounds = koFetchRounds(todayKey());
   STATE.diagTried = [`eventsround r=${rounds.join(',')} (po 3 vienu metu)`];
 
   const apiUrls = rounds.map(r => `${base}eventsround.php?id=${id}&r=${r}&s=${CONFIG.SEASON}`);
@@ -1038,7 +1049,8 @@ function heroCard(ev) {
   const stage = g ? `${esc(g)} grupė` : (ev._ko ? esc(koRoundName(ev._ko)) : 'Atkrintamosios');
   const hype = computeHype(ev);
   const od = winProbs(ev);
-  const cityTxt = ev._city ? ` · 📍 ${esc(ev._city)}` : '';
+  const city = eventCity(ev);
+  const cityTxt = city ? ` · 📍 ${esc(city)}` : '';
   const mid = od
     ? `<div class="hero-mid"><span class="hero-p ph">${od.est ? '≈' : ''}${od.ph}%</span><span class="hero-x">:</span><span class="hero-p pa">${od.pa}%</span></div>`
     : `<div class="hero-mid"><span class="hero-vs">VS</span></div>`;
@@ -1133,7 +1145,8 @@ function matchCard(ev, showDay = false) {
 
   // Laiko eilutė. Rūšiuojant pagal laiką dieną rodo antraštė (kortelėje tik laikas);
   // pagal hype (antraščių nėra) – rodom dieną. Atkrintamosioms pridedame miestą.
-  const cityTxt = ev._city ? ` · 📍 ${esc(ev._city)}` : '';
+  const city = eventCity(ev);
+  const cityTxt = city ? ` · 📍 ${esc(city)}` : '';
   const when = showDay
     ? `<div class="when">🕒 <span class="t">${esc(dayLabel(vilniusKey(d), d))}</span> · ${esc(vilniusTime(d))} (LT)${cityTxt}</div>`
     : `<div class="when">🕒 <span class="t">${esc(vilniusTime(d))}</span> (LT)${cityTxt}</div>`;

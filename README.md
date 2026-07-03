@@ -26,14 +26,18 @@ Atidaryk `index.html` naršyklėje (telefone ar kompiuteryje). Duomenys
 ## Duomenų šaltinis
 - **TheSportsDB** v1 API (nemokamas raktas `123`), kviečiamas tiesiai iš naršyklės.
 - Lyga: **FIFA World Cup, `idLeague = 4429`**, sezonas **`2026`**.
-- Grupių etapas: **`eventsround.php`** turais (r=1,2,3) — grąžina visas 72
-  rungtynes su grupėmis ir rezultatais (nemokamame rakte neribojama).
-- Atkrintamosios: turo „karkasą" (poras ir tvarkaraštį) laikome pagal oficialią
-  FIFA schemą, kad iškart matytųsi **visos** likusios rungtynės. Realius
-  **rezultatus** traukiame per **`eventsday.php`** kiekvienai praėjusiai
-  atkrintamųjų dienai (šis endpointas patikimas; `eventspastleague` nemokamame
-  rakte grąžina vos po 1). Komandos sujungiamos pagal porą, todėl laikas ir
-  rezultatas įsilieja automatiškai.
+- Viskas per **`eventsround.php`** (nemokamame rakte neribojamas). Grupės —
+  r=1,2,3 (72 rungtynės su grupėmis ir rezultatais). Atkrintamąsias TheSportsDB
+  numeruoja pagal komandų skaičių etape: 1/16 = **r=32**, aštuntfinaliai =
+  **r=16**, ketvirtfinaliai = **r=8**, pusfinaliai = **r=4** (finalas patenka į
+  r=2 kartu su grupių 2-u turu). Kiekvieną turą pradedame traukti keliomis
+  dienomis prieš jam prasidedant — tolimų dar nesiunčiame, kad neišnaudotume
+  rakto limito. Užklausos ribojamos (≤3 vienu metu, su pakartojimu).
+- 1/16 finalo „karkasą" (poras, laikus, miestus) laikome ir lokaliai pagal
+  oficialią FIFA schemą — rezultatai iš API įsilieja pagal komandų porą (namų/
+  svečių tvarka sutvarkoma automatiškai, baudinių serijos — taip pat).
+- Sėkmingai įkelti duomenys įsimenami (`localStorage`) — jei API laikinai
+  neatsako, rodomi paskutiniai įsiminti rezultatai su aiškia žyme.
 - **Koeficientai** — `odds.json` (statinis failas, be API rakto). Realūs
   bukmekerių koeficientai paversti tikimybėmis (pašalinus maržą). Atkrintamosioms,
   kurioms koeficientų dar nėra, rodomas įvertis pagal reitingus (žymimas „≈").
