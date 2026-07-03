@@ -374,7 +374,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v23',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v24',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -879,8 +879,8 @@ async function loadData() {
 
   const apiUrls = rounds.map(r => `${base}eventsround.php?id=${id}&r=${r}&s=${CONFIG.SEASON}`);
   const [oddsData, apiResults] = await Promise.all([
-    fetchJson('odds.json'),              // vietinis failas (ne API — neribojamas)
-    fetchAllLimited(apiUrls, 3, 120),    // ne daugiau 3 vienu metu
+    fetchJson('odds.json?ts=' + Date.now()),  // vietinis failas; ?ts apeina naršyklės talpyklą
+    fetchAllLimited(apiUrls, 3, 120),         // ne daugiau 3 vienu metu
   ]);
 
   // Koeficientų žemėlapis: rūšiuotas komandų raktas -> tikimybės pagal komandą

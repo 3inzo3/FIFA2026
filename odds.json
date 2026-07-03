@@ -1,1 +1,61 @@
-{"generated": "2026-06-28", "source": "The Odds API h2h (2-krypčių „kas pereina\")", "stage": "knockout", "matches": [{"h": "South Africa", "a": "Canada", "ph": 22, "pa": 78}, {"h": "Brazil", "a": "Japan", "ph": 75, "pa": 25}, {"h": "Germany", "a": "Paraguay", "ph": 87, "pa": 13}, {"h": "Netherlands", "a": "Morocco", "ph": 64, "pa": 36}, {"h": "Ivory Coast", "a": "Norway", "ph": 36, "pa": 64}, {"h": "France", "a": "Sweden", "ph": 89, "pa": 11}, {"h": "Mexico", "a": "Ecuador", "ph": 63, "pa": 37}, {"h": "England", "a": "DR Congo", "ph": 91, "pa": 9}, {"h": "Belgium", "a": "Senegal", "ph": 64, "pa": 36}, {"h": "USA", "a": "Bosnia & Herzegovina", "ph": 87, "pa": 13}, {"h": "Spain", "a": "Austria", "ph": 91, "pa": 9}, {"h": "Switzerland", "a": "Algeria", "ph": 69, "pa": 31}, {"h": "Australia", "a": "Egypt", "ph": 43, "pa": 57}, {"h": "Argentina", "a": "Cape Verde", "ph": 95, "pa": 5}, {"h": "Colombia", "a": "Ghana", "ph": 80, "pa": 20}]}
+{
+ "generated": "2026-07-03",
+ "source": "The Odds API h2h — 24 bukmekerių vidurkis (2-krypčių „kas žengia toliau“)",
+ "stage": "knockout",
+ "matches": [
+  {
+   "h": "Australia",
+   "a": "Egypt",
+   "ph": 39,
+   "pa": 61
+  },
+  {
+   "h": "Argentina",
+   "a": "Cape Verde",
+   "ph": 95,
+   "pa": 5
+  },
+  {
+   "h": "Colombia",
+   "a": "Ghana",
+   "ph": 85,
+   "pa": 15
+  },
+  {
+   "h": "Canada",
+   "a": "Morocco",
+   "ph": 26,
+   "pa": 74
+  },
+  {
+   "h": "Paraguay",
+   "a": "France",
+   "ph": 7,
+   "pa": 93
+  },
+  {
+   "h": "Brazil",
+   "a": "Norway",
+   "ph": 70,
+   "pa": 30
+  },
+  {
+   "h": "Mexico",
+   "a": "England",
+   "ph": 44,
+   "pa": 56
+  },
+  {
+   "h": "Portugal",
+   "a": "Spain",
+   "ph": 32,
+   "pa": 68
+  },
+  {
+   "h": "USA",
+   "a": "Belgium",
+   "ph": 50,
+   "pa": 50
+  }
+ ]
+}
