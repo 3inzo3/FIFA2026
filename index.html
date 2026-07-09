@@ -374,7 +374,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v24',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v25',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -538,14 +538,13 @@ const KO_NEXT = {
   104: [101, 102], // Finalas
   103: [101, 102], // Dėl 3 vietos (pralaimėtojai)
 };
-// Nuo kada TRAUKTI kiekvieno atkrintamųjų turo duomenis. Turai prasideda
-// 06-28 / 07-04 / 07-09 / 07-14, bet traukiame po kelias dienas ANKSČIAU —
-// kad būsimo turo tvarkaraštis (poros, laikai) matytųsi iš anksto, vos tik
-// paaiškėja komandos. Dar neprasidėjusių turų netraukiame (taupom raktą).
-const KO_ROUND_FETCH_FROM = { 32: '2026-06-25', 16: '2026-07-01', 8: '2026-07-06', 4: '2026-07-11' };
-// Kuriuos turus traukti šiandien (grupės visada; atkrintamieji – pagal datą)
+// „eventsround" atkrintamosioms veikia tik R32 (r=32) ir 1/8 (r=16) — nuo
+// ketvirtfinalių (r=8) TheSportsDB grąžina „null" (patikrinta). Todėl vėlesnius
+// etapus imame per „next"/„past" (nepriklauso nuo turo numerio) + iš odds.json
+// (poros ir laikai). Čia – tik tie „eventsround" turai, kurie realiai veikia.
+const KO_ROUND_FETCH_FROM = { 32: '2026-06-25', 16: '2026-07-01' };
 function koFetchRounds(today) {
-  return [1, 2, 3, ...[32, 16, 8, 4].filter(r => today >= KO_ROUND_FETCH_FROM[r])];
+  return [1, 2, 3, ...[32, 16].filter(r => today >= KO_ROUND_FETCH_FROM[r])];
 }
 
 // Tinklelio stulpeliai. „nums" – iš viršaus į apačią, kad gretimos poros jungtųsi.
@@ -579,11 +578,11 @@ function koRoundByDate(ev) {
   const d = kickoffDate(ev);
   if (!d) return 'Atkrintamosios';
   const k = vilniusKey(d);
-  if (k <= '2026-07-07') return 'Aštuntfinalis';
-  if (k <= '2026-07-11') return 'Ketvirtfinalis';
-  if (k <= '2026-07-15') return 'Pusfinalis';
-  if (k <= '2026-07-18') return 'Dėl 3 vietos';
-  return 'Finalas';
+  if (k <= '2026-07-08') return 'Aštuntfinalis';   // 1/8: liepos 4–7
+  if (k <= '2026-07-13') return 'Ketvirtfinalis';  // liepos 9–12
+  if (k <= '2026-07-16') return 'Pusfinalis';      // liepos 14–15
+  if (k <= '2026-07-18') return 'Dėl 3 vietos';    // liepos 18
+  return 'Finalas';                                // liepos 19
 }
 
 // --------------------------------------------------------------------
@@ -828,11 +827,11 @@ function loadCache() {
 // laiką, statusą ir rezultatą (teisingai sukeičia namus/svečius, jei reikia).
 function buildKoEvent(r, api) {
   const ev = {
-    idEvent: 'ko-' + r.m, idLeague: CONFIG.LEAGUE_ID,
+    idEvent: 'ko-' + (r.m || pairKey(r.h, r.a)), idLeague: CONFIG.LEAGUE_ID,
     strHomeTeam: r.h, strAwayTeam: r.a,
     strTimestamp: r.ts, dateEvent: r.ts.slice(0, 10), strTime: r.ts.slice(11),
     intHomeScore: null, intAwayScore: null, strStatus: 'NS',
-    _ko: r.m, _city: r.city,
+    _ko: r.m || null, _city: r.city,  // be numerio (QF+) etapas nustatomas pagal datą
   };
   if (api) {
     const sameOrient = normTeam(api.strHomeTeam) === normTeam(r.h);
@@ -877,7 +876,11 @@ async function loadData() {
   const rounds = koFetchRounds(todayKey());
   STATE.diagTried = [`eventsround r=${rounds.join(',')} (po 3 vienu metu)`];
 
-  const apiUrls = rounds.map(r => `${base}eventsround.php?id=${id}&r=${r}&s=${CONFIG.SEASON}`);
+  const apiUrls = [
+    ...rounds.map(r => `${base}eventsround.php?id=${id}&r=${r}&s=${CONFIG.SEASON}`),
+    `${base}eventsnextleague.php?id=${id}`,   // būsimos KO (ketvirtf. ir toliau) – nepriklauso nuo turo numerio
+    `${base}eventspastleague.php?id=${id}`,   // paskutinės baigtos – rezultatai
+  ];
   const [oddsData, apiResults] = await Promise.all([
     fetchJson('odds.json?ts=' + Date.now()),  // vietinis failas; ?ts apeina naršyklės talpyklą
     fetchAllLimited(apiUrls, 3, 120),         // ne daugiau 3 vienu metu
@@ -918,10 +921,18 @@ async function loadData() {
   for (const ev of events) {
     if (isKnockoutEvent(ev)) STATE.koApi.set(pairKey(ev.strHomeTeam, ev.strAwayTeam), ev);
   }
-  const koEvents = KO_R32.map(r => buildKoEvent(r, STATE.koApi.get(pairKey(r.h, r.a))));
-  // API atkrintamosios, kurių nėra mūsų R32 sąraše (pvz. jau aiškios 1/8 poros)
+  // Atkrintamųjų tvarkaraštis: R32 iš tinklelio + vėlesni etapai iš odds.json
+  // (kiekvienas įrašas su laiku „t": pora, laikas, %). Taip ketvirtfinaliai/
+  // pusfinaliai/finalas rodosi nepriklausomai nuo to, ar TheSportsDB juos turi.
   const r32keys = new Set(KO_R32.map(r => pairKey(r.h, r.a)));
-  const koExtra = [...STATE.koApi.entries()].filter(([k]) => !r32keys.has(k)).map(([, ev]) => ev);
+  const oddsFixtures = (oddsData && Array.isArray(oddsData.matches) ? oddsData.matches : [])
+    .filter(m => m.t && !r32keys.has(pairKey(m.h, m.a)))
+    .map(m => ({ h: m.h, a: m.a, ts: m.t, city: m.city || '' }));
+  const koFixtures = [...KO_R32, ...oddsFixtures];
+  const koEvents = koFixtures.map(r => buildKoEvent(r, STATE.koApi.get(pairKey(r.h, r.a))));
+  // API atkrintamosios, kurių nėra mūsų tvarkaraštyje (pvz. baigtos 1/8 poros)
+  const fixtureKeys = new Set(koFixtures.map(r => pairKey(r.h, r.a)));
+  const koExtra = [...STATE.koApi.entries()].filter(([k]) => !fixtureKeys.has(k)).map(([, ev]) => ev);
   // Galutinis sąrašas: grupių etapas (iš API) + atkrintamosios (tinklelis + API)
   const groupEvents = events.filter(ev => groupOf(ev) !== null);
   const finalEvents = [...groupEvents, ...koEvents, ...koExtra];
@@ -1046,7 +1057,7 @@ function startHeroTimer(targetMs) {
 function heroCard(ev) {
   const d = kickoffDate(ev);
   const g = groupOf(ev);
-  const stage = g ? `${esc(g)} grupė` : (ev._ko ? esc(koRoundName(ev._ko)) : 'Atkrintamosios');
+  const stage = g ? `${esc(g)} grupė` : (ev._ko ? esc(koRoundName(ev._ko)) : esc(koRoundByDate(ev)));
   const hype = computeHype(ev);
   const od = winProbs(ev);
   const city = eventCity(ev);

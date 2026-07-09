@@ -1,61 +1,11 @@
 {
- "generated": "2026-07-03",
- "source": "The Odds API h2h — 24 bukmekerių vidurkis (2-krypčių „kas žengia toliau“)",
- "stage": "knockout",
+ "generated": "2026-07-09",
+ "source": "The Odds API h2h — 25 bukmekerių vidurkis (2-krypčių „kas žengia toliau“)",
+ "stage": "quarterfinals",
  "matches": [
-  {
-   "h": "Australia",
-   "a": "Egypt",
-   "ph": 39,
-   "pa": 61
-  },
-  {
-   "h": "Argentina",
-   "a": "Cape Verde",
-   "ph": 95,
-   "pa": 5
-  },
-  {
-   "h": "Colombia",
-   "a": "Ghana",
-   "ph": 85,
-   "pa": 15
-  },
-  {
-   "h": "Canada",
-   "a": "Morocco",
-   "ph": 26,
-   "pa": 74
-  },
-  {
-   "h": "Paraguay",
-   "a": "France",
-   "ph": 7,
-   "pa": 93
-  },
-  {
-   "h": "Brazil",
-   "a": "Norway",
-   "ph": 70,
-   "pa": 30
-  },
-  {
-   "h": "Mexico",
-   "a": "England",
-   "ph": 44,
-   "pa": 56
-  },
-  {
-   "h": "Portugal",
-   "a": "Spain",
-   "ph": 32,
-   "pa": 68
-  },
-  {
-   "h": "USA",
-   "a": "Belgium",
-   "ph": 50,
-   "pa": 50
-  }
+  { "h": "France",    "a": "Morocco",     "ph": 81, "pa": 19, "t": "2026-07-09T20:00:00" },
+  { "h": "Spain",     "a": "Belgium",     "ph": 77, "pa": 23, "t": "2026-07-10T19:00:00" },
+  { "h": "Norway",    "a": "England",     "ph": 31, "pa": 69, "t": "2026-07-11T21:00:00" },
+  { "h": "Argentina", "a": "Switzerland", "ph": 77, "pa": 23, "t": "2026-07-12T01:00:00" }
  ]
 }
