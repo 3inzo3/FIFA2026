@@ -374,7 +374,7 @@
 const CONFIG = {
   // TheSportsDB nemokamas v1 API (raktas „123"). Veikia tiesiai iš naršyklės.
   API_BASE: 'https://www.thesportsdb.com/api/v1/json/123/',
-  VERSION: 'v25',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
+  VERSION: 'v26',               // versijos žymė (kad matytume, ar užsikrovė naujas variantas)
   LEAGUE_ID: '4429',            // FIFA World Cup lygos ID TheSportsDB sistemoje
   SEASON: '2026',               // patvirtintas TheSportsDB sezono žymėjimas (patikrinta)
   TZ: 'Europe/Vilnius',         // Lietuvos laiko juosta (vasarą = EEST, UTC+3)
@@ -1477,6 +1477,11 @@ function init() {
   // Šios dienos data antraštėje (Lietuvos laiku)
   el('todayDate').textContent = vilniusLongDate(new Date());
   loadData(); // iškart bandome įkelti duomenis
+  // Automatinis atsinaujinimas: „network-first" service worker (žr. sw.js) —
+  // kad įdiegta programėlė nebeužstrigtų senoje versijoje.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 }
 init();
 </script>
